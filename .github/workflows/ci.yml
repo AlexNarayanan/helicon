@@ -18,7 +18,7 @@ jobs:
           POSTGRES_USER: helicon
           POSTGRES_PASSWORD: helicon_test
         ports:
-          - 5432:5432
+          - 7001:5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -26,7 +26,7 @@ jobs:
           --health-retries 5
 
     env:
-      DATABASE_URL: postgres://helicon:helicon_test@localhost:5432/helicon
+      DATABASE_URL: postgres://helicon:helicon_test@localhost:7001/helicon
       SETLISTFM_API_KEY: test_key
 
     steps:
