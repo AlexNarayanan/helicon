@@ -6,7 +6,7 @@ export default defineWorkspace([
 		test: {
 			name: 'unit',
 			include: ['tests/**/*.{test,spec}.{js,ts}'],
-			exclude: ['tests/e2e/**', 'tests/visual/**', 'tests/slice1/**', 'tests/slice2/**'],
+			exclude: ['tests/e2e/**', 'tests/visual/**', 'tests/slice1/**', 'tests/slice2/**', 'tests/slice3/**'],
 			globals: true,
 			environment: 'node'
 		}
@@ -24,9 +24,13 @@ export default defineWorkspace([
 	{
 		test: {
 			name: 'api',
-			include: ['tests/slice2/**/*.{test,spec}.{js,ts}'],
+			include: [
+				'tests/slice2/**/*.{test,spec}.{js,ts}',
+				'tests/slice3/**/*.{test,spec}.{js,ts}'
+			],
 			globals: true,
-			environment: 'node'
+			environment: 'node',
+			testTimeout: 120_000
 		}
 	}
 ]);
