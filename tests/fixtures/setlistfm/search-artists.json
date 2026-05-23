@@ -1,0 +1,21 @@
+{
+  "artist": [
+    {
+      "mbid": "65f4f0c5-ef9e-490c-aee3-909e7ae6b2ab",
+      "name": "Metallica",
+      "sortName": "Metallica",
+      "disambiguation": "",
+      "url": "https://www.setlist.fm/setlists/metallica-2bd6dcce.html"
+    },
+    {
+      "mbid": "a1b2c3d4-ef9e-490c-aee3-000000000000",
+      "name": "Metallica Tribute Band",
+      "sortName": "Metallica Tribute Band",
+      "disambiguation": "tribute band",
+      "url": "https://www.setlist.fm/setlists/metallica-tribute-band-00000000.html"
+    }
+  ],
+  "total": 2,
+  "page": 1,
+  "itemsPerPage": 20
+}
