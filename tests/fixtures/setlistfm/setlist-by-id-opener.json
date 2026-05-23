@@ -1,0 +1,38 @@
+{
+  "id": "opener-001",
+  "versionId": "opener-v1",
+  "eventDate": "11-08-2023",
+  "lastUpdated": "2023-08-11T18:00:00.000+0000",
+  "artist": {
+    "mbid": "9c9f1380-2516-4fc9-a3e6-f9f61941d090",
+    "name": "Pantera",
+    "sortName": "Pantera",
+    "disambiguation": "",
+    "url": "https://www.setlist.fm/setlists/pantera.html"
+  },
+  "venue": {
+    "id": "6bd6ca6e",
+    "name": "Madison Square Garden",
+    "city": {
+      "id": "5128581",
+      "name": "New York",
+      "stateCode": "NY",
+      "state": "New York",
+      "coords": { "long": -73.9934, "lat": 40.7505 },
+      "country": { "code": "US", "name": "United States" }
+    },
+    "url": "https://www.setlist.fm/venue/madison-square-garden-new-york-ny-usa-6bd6ca6e.html"
+  },
+  "tour": { "name": "Reunion Tour" },
+  "sets": {
+    "set": [
+      {
+        "song": [
+          { "name": "A New Level", "info": "" },
+          { "name": "Walk", "info": "" }
+        ]
+      }
+    ]
+  },
+  "url": "https://www.setlist.fm/setlist/pantera/2023/madison-square-garden-opener-001.html"
+}

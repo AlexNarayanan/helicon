@@ -63,7 +63,11 @@
 </script>
 
 <div class="mx-auto max-w-2xl">
-	<h1 class="mb-8 text-3xl font-bold" style="color: var(--color-text);">Log a show</h1>
+	<h1 class="mb-2 text-3xl font-bold" style="color: var(--color-text);">Log a show</h1>
+	<p class="mb-8 text-sm" style="color: var(--color-text-muted);">
+		Find any artist that played; we'll pull in the rest of the lineup we can find for that
+		date and venue.
+	</p>
 
 	<form
 		onsubmit={(e) => {

@@ -73,14 +73,18 @@ describe('tables exist and accept CRUD', () => {
 		expect(song.artistId).toBe(artist.id);
 	});
 
-	it('inserts and reads an attendance with setlist and setlist_songs', async () => {
+	it('inserts full chain: user → venue → show → artist → tour → performance → song → setlist_song → attendance', async () => {
 		const [user] = await db
 			.insert(schema.users)
 			.values({ displayName: 'Test Fan' })
 			.returning();
-		const [artist] = await db
+		const [headliner] = await db
 			.insert(schema.artists)
 			.values({ setlistfmMbid: 'mbid-iron-maiden', name: 'Iron Maiden', sortName: 'Iron Maiden' })
+			.returning();
+		const [opener] = await db
+			.insert(schema.artists)
+			.values({ setlistfmMbid: 'mbid-opener', name: 'The Raven Age', sortName: 'Raven Age' })
 			.returning();
 		const [venue] = await db
 			.insert(schema.venues)
@@ -91,33 +95,50 @@ describe('tables exist and accept CRUD', () => {
 				country: 'GB'
 			})
 			.returning();
+
+		const [show] = await db
+			.insert(schema.shows)
+			.values({ venueId: venue.id, showDate: '2024-08-11' })
+			.returning();
+		expect(show.id).toBeTypeOf('number');
+
+		const [tour] = await db
+			.insert(schema.tours)
+			.values({ artistId: headliner.id, name: 'The Future Past Tour' })
+			.returning();
+
 		const [song] = await db
 			.insert(schema.songs)
-			.values({ name: 'The Trooper', artistId: artist.id, normalizedName: 'the trooper' })
+			.values({ name: 'The Trooper', artistId: headliner.id, normalizedName: 'the trooper' })
 			.returning();
 
-		const [attendance] = await db
-			.insert(schema.attendances)
+		const [openerPerf] = await db
+			.insert(schema.performances)
 			.values({
-				userId: user.id,
-				artistId: artist.id,
-				venueId: venue.id,
-				showDate: '2024-08-11',
-				attendanceStatus: 'confirmed'
+				showId: show.id,
+				artistId: opener.id,
+				billingOrder: 0,
+				setlistfmSetlistId: 'sl-opener',
+				rawJson: { source: 'test', artist: 'opener' }
 			})
 			.returning();
-		expect(attendance.id).toBeTypeOf('number');
 
-		const [setlist] = await db
-			.insert(schema.setlists)
-			.values({ attendanceId: attendance.id, rawJson: { source: 'test' }, tourName: 'World Tour' })
+		const [headlinerPerf] = await db
+			.insert(schema.performances)
+			.values({
+				showId: show.id,
+				artistId: headliner.id,
+				billingOrder: 1,
+				tourId: tour.id,
+				setlistfmSetlistId: 'sl-headliner',
+				rawJson: { source: 'test', artist: 'headliner' }
+			})
 			.returning();
-		expect(setlist.attendanceId).toBe(attendance.id);
 
 		const [setlistSong] = await db
 			.insert(schema.setlistSongs)
 			.values({
-				setlistId: setlist.id,
+				performanceId: headlinerPerf.id,
 				songId: song.id,
 				setNumber: 1,
 				position: 1,
@@ -125,15 +146,124 @@ describe('tables exist and accept CRUD', () => {
 				isCover: false
 			})
 			.returning();
-		expect(setlistSong.songId).toBe(song.id);
+		expect(setlistSong.performanceId).toBe(headlinerPerf.id);
+
+		const [attendance] = await db
+			.insert(schema.attendances)
+			.values({ userId: user.id, showId: show.id, attendanceStatus: 'confirmed' })
+			.returning();
+		expect(attendance.id).toBeTypeOf('number');
+		expect(attendance.showId).toBe(show.id);
+
+		// the two performances exist on the same show with distinct billing orders
+		expect(openerPerf.billingOrder).toBe(0);
+		expect(headlinerPerf.billingOrder).toBe(1);
+	});
+});
+
+describe('uniqueness constraints', () => {
+	it('rejects duplicate (venue_id, show_date) on shows', async () => {
+		const [v] = await db
+			.insert(schema.venues)
+			.values({ setlistfmId: 'venue-unique-show', name: 'V', city: 'C', country: 'US' })
+			.returning();
+		await db.insert(schema.shows).values({ venueId: v.id, showDate: '2024-01-01' });
+		await expect(
+			db.insert(schema.shows).values({ venueId: v.id, showDate: '2024-01-01' })
+		).rejects.toThrow();
+	});
+
+	it('rejects duplicate (show_id, artist_id) on performances', async () => {
+		const [v] = await db
+			.insert(schema.venues)
+			.values({ setlistfmId: 'venue-perf-art', name: 'V', city: 'C', country: 'US' })
+			.returning();
+		const [s] = await db
+			.insert(schema.shows)
+			.values({ venueId: v.id, showDate: '2024-02-01' })
+			.returning();
+		const [a] = await db
+			.insert(schema.artists)
+			.values({ setlistfmMbid: 'mbid-perf-art', name: 'A', sortName: 'A' })
+			.returning();
+		await db
+			.insert(schema.performances)
+			.values({ showId: s.id, artistId: a.id, billingOrder: 0 });
+		await expect(
+			db
+				.insert(schema.performances)
+				.values({ showId: s.id, artistId: a.id, billingOrder: 1 })
+		).rejects.toThrow();
+	});
+
+	it('rejects duplicate (show_id, billing_order) on performances', async () => {
+		const [v] = await db
+			.insert(schema.venues)
+			.values({ setlistfmId: 'venue-perf-bill', name: 'V', city: 'C', country: 'US' })
+			.returning();
+		const [s] = await db
+			.insert(schema.shows)
+			.values({ venueId: v.id, showDate: '2024-03-01' })
+			.returning();
+		const [a1] = await db
+			.insert(schema.artists)
+			.values({ setlistfmMbid: 'mbid-perf-bill-1', name: 'A1', sortName: 'A1' })
+			.returning();
+		const [a2] = await db
+			.insert(schema.artists)
+			.values({ setlistfmMbid: 'mbid-perf-bill-2', name: 'A2', sortName: 'A2' })
+			.returning();
+		await db
+			.insert(schema.performances)
+			.values({ showId: s.id, artistId: a1.id, billingOrder: 0 });
+		await expect(
+			db
+				.insert(schema.performances)
+				.values({ showId: s.id, artistId: a2.id, billingOrder: 0 })
+		).rejects.toThrow();
+	});
+
+	it('rejects duplicate (user_id, show_id) on attendances', async () => {
+		const [u] = await db
+			.insert(schema.users)
+			.values({ displayName: 'Dup' })
+			.returning();
+		const [v] = await db
+			.insert(schema.venues)
+			.values({ setlistfmId: 'venue-att-dup', name: 'V', city: 'C', country: 'US' })
+			.returning();
+		const [s] = await db
+			.insert(schema.shows)
+			.values({ venueId: v.id, showDate: '2024-04-01' })
+			.returning();
+		await db.insert(schema.attendances).values({ userId: u.id, showId: s.id });
+		await expect(
+			db.insert(schema.attendances).values({ userId: u.id, showId: s.id })
+		).rejects.toThrow();
 	});
 });
 
 describe('indexes exist', () => {
-	it('attendances_user_id_show_date_idx is present', async () => {
+	it('attendances_user_id_idx is present', async () => {
 		const rows = await client`
       SELECT indexname FROM pg_indexes
-      WHERE tablename = 'attendances' AND indexname = 'attendances_user_id_show_date_idx'
+      WHERE tablename = 'attendances' AND indexname = 'attendances_user_id_idx'
+    `;
+		expect(rows.length).toBe(1);
+	});
+
+	it('shows_show_date_idx is present', async () => {
+		const rows = await client`
+      SELECT indexname FROM pg_indexes
+      WHERE tablename = 'shows' AND indexname = 'shows_show_date_idx'
+    `;
+		expect(rows.length).toBe(1);
+	});
+
+	it('performances_artist_id_idx is present', async () => {
+		const rows = await client`
+      SELECT indexname FROM pg_indexes
+      WHERE tablename = 'performances' AND indexname = 'performances_artist_id_idx'
     `;
 		expect(rows.length).toBe(1);
 	});

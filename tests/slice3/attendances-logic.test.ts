@@ -82,3 +82,62 @@ describe('searchSetlists', () => {
 		expect(capturedUrl?.searchParams.get('date')).toBe('11-08-2023');
 	});
 });
+
+describe('searchAllSetlistsAtVenueOnDate', () => {
+	it('aggregates pages until a partial page is returned', async () => {
+		const calls: string[] = [];
+		mswServer.use(
+			http.get(`${SETLISTFM_BASE}/search/setlists`, ({ request }) => {
+				const url = new URL(request.url);
+				const page = url.searchParams.get('p') ?? '1';
+				calls.push(page);
+				if (page === '1') {
+					return HttpResponse.json({
+						type: 'setlists',
+						total: 25,
+						page: 1,
+						itemsPerPage: 20,
+						setlist: Array.from({ length: 20 }, (_, i) => ({ id: `p1-${i}` }))
+					});
+				}
+				return HttpResponse.json({
+					type: 'setlists',
+					total: 25,
+					page: 2,
+					itemsPerPage: 20,
+					setlist: Array.from({ length: 5 }, (_, i) => ({ id: `p2-${i}` }))
+				});
+			})
+		);
+		const sfClient = createSetlistFmClient({ apiKey: 'test', rps: Infinity });
+		const all = await sfClient.searchAllSetlistsAtVenueOnDate('venue-1', '11-08-2023');
+		expect(all).toHaveLength(25);
+		expect(calls).toEqual(['1', '2']);
+	});
+
+	it('caps at MAX_PAGES and warns', async () => {
+		mswServer.use(
+			http.get(`${SETLISTFM_BASE}/search/setlists`, () =>
+				HttpResponse.json({
+					type: 'setlists',
+					total: 1000,
+					page: 1,
+					itemsPerPage: 20,
+					setlist: Array.from({ length: 20 }, (_, i) => ({ id: `x-${i}` }))
+				})
+			)
+		);
+		const sfClient = createSetlistFmClient({ apiKey: 'test', rps: Infinity });
+		const all = await sfClient.searchAllSetlistsAtVenueOnDate('venue-x', '11-08-2023', 3);
+		expect(all).toHaveLength(60);
+	});
+
+	it('returns empty array on 404', async () => {
+		mswServer.use(
+			http.get(`${SETLISTFM_BASE}/search/setlists`, () => new HttpResponse(null, { status: 404 }))
+		);
+		const sfClient = createSetlistFmClient({ apiKey: 'test', rps: Infinity, maxRetries: 0 });
+		const all = await sfClient.searchAllSetlistsAtVenueOnDate('venue-empty', '11-08-2023');
+		expect(all).toEqual([]);
+	});
+});

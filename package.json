@@ -19,7 +19,7 @@
     "test:smoke": "bash scripts/smoke-test.sh",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "tsx scripts/seed.ts"
+    "db:seed": "tsx --env-file=.env scripts/seed.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",

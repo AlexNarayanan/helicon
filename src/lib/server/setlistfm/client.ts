@@ -130,6 +130,7 @@ export function createSetlistFmClient(options: SetlistFmClientOptions = {}) {
 
 		searchSetlists(params: {
 			artistMbid?: string;
+			venueId?: string;
 			venueName?: string;
 			date?: string;
 			year?: number;
@@ -137,10 +138,37 @@ export function createSetlistFmClient(options: SetlistFmClientOptions = {}) {
 		}): Promise<SearchSetlistsResponse> {
 			const raw: Record<string, string | number> = { p: params.page ?? 1 };
 			if (params.artistMbid) raw.artistMbid = params.artistMbid;
+			if (params.venueId) raw.venueId = params.venueId;
 			if (params.venueName) raw.venueName = params.venueName;
 			if (params.date) raw.date = params.date;
 			if (params.year) raw.year = params.year;
 			return fetchJson('/search/setlists', raw);
+		},
+
+		async searchAllSetlistsAtVenueOnDate(
+			venueId: string,
+			date: string,
+			maxPages = 5
+		): Promise<SetlistFmSetlist[]> {
+			const all: SetlistFmSetlist[] = [];
+			for (let page = 1; page <= maxPages; page++) {
+				let response: SearchSetlistsResponse;
+				try {
+					response = await this.searchSetlists({ venueId, date, page });
+				} catch (err) {
+					// setlist.fm returns 404 when there are zero results — treat as empty page
+					if (err instanceof Error && err.message.includes('404')) break;
+					throw err;
+				}
+				all.push(...response.setlist);
+				if (response.setlist.length < response.itemsPerPage) break;
+				if (page === maxPages) {
+					console.warn(
+						`searchAllSetlistsAtVenueOnDate: hit MAX_PAGES=${maxPages} for venue ${venueId} on ${date}`
+					);
+				}
+			}
+			return all;
 		},
 
 		getSetlist(id: string): Promise<SetlistFmSetlist> {

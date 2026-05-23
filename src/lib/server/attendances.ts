@@ -1,6 +1,16 @@
+import { eq, sql } from 'drizzle-orm';
 import type { DB } from './db/index.js';
-import { artists, venues, songs, attendances, setlists, setlistSongs } from './db/schema.js';
-import type { SetlistFmSetlist } from './setlistfm/types.js';
+import {
+	artists,
+	venues,
+	songs,
+	attendances,
+	performances,
+	setlistSongs,
+	shows,
+	tours
+} from './db/schema.js';
+import type { SetlistFmArtist, SetlistFmSetlist } from './setlistfm/types.js';
 import type { SetlistFmClient } from './setlistfm/client.js';
 
 export function normalizeSongName(name: string): string {
@@ -40,29 +50,25 @@ export async function searchSetlists(
 	return setlistRes.setlist;
 }
 
-export async function saveAttendance(
-	db: DB,
-	setlist: SetlistFmSetlist,
-	status: 'confirmed' | 'planned',
-	userId: number,
-	notes?: string
-): Promise<{ attendanceId: number }> {
-	const [artist] = await db
+async function upsertArtist(db: DB, a: SetlistFmArtist): Promise<number> {
+	const [row] = await db
 		.insert(artists)
 		.values({
-			setlistfmMbid: setlist.artist.mbid,
-			name: setlist.artist.name,
-			sortName: setlist.artist.sortName,
-			disambiguation: setlist.artist.disambiguation ?? ''
+			setlistfmMbid: a.mbid,
+			name: a.name,
+			sortName: a.sortName,
+			disambiguation: a.disambiguation ?? ''
 		})
 		.onConflictDoUpdate({
 			target: artists.setlistfmMbid,
-			set: { name: setlist.artist.name, sortName: setlist.artist.sortName }
+			set: { name: a.name, sortName: a.sortName }
 		})
-		.returning();
+		.returning({ id: artists.id });
+	return row.id;
+}
 
-	const v = setlist.venue;
-	const [venue] = await db
+async function upsertVenue(db: DB, v: SetlistFmSetlist['venue']): Promise<number> {
+	const [row] = await db
 		.insert(venues)
 		.values({
 			setlistfmId: v.id,
@@ -77,30 +83,79 @@ export async function saveAttendance(
 			target: venues.setlistfmId,
 			set: { name: v.name }
 		})
-		.returning();
+		.returning({ id: venues.id });
+	return row.id;
+}
 
-	const [attendance] = await db
-		.insert(attendances)
+async function upsertShow(db: DB, venueId: number, showDate: string): Promise<number> {
+	const [row] = await db
+		.insert(shows)
+		.values({ venueId, showDate })
+		.onConflictDoUpdate({
+			target: [shows.venueId, shows.showDate],
+			set: { venueId: sql`excluded.venue_id` }
+		})
+		.returning({ id: shows.id });
+	return row.id;
+}
+
+async function upsertTour(db: DB, artistId: number, name: string): Promise<number> {
+	const [row] = await db
+		.insert(tours)
+		.values({ artistId, name })
+		.onConflictDoUpdate({
+			target: [tours.artistId, tours.name],
+			set: { name }
+		})
+		.returning({ id: tours.id });
+	return row.id;
+}
+
+async function upsertPerformance(
+	db: DB,
+	params: {
+		showId: number;
+		artistId: number;
+		billingOrder: number;
+		tourId: number | null;
+		setlistfmSetlistId: string;
+		rawJson: SetlistFmSetlist;
+	}
+): Promise<number> {
+	const [row] = await db
+		.insert(performances)
 		.values({
-			userId,
-			artistId: artist.id,
-			venueId: venue.id,
-			showDate: parseSetlistDate(setlist.eventDate),
-			notes: notes ?? '',
-			setlistfmSetlistId: setlist.id,
+			showId: params.showId,
+			artistId: params.artistId,
+			billingOrder: params.billingOrder,
+			tourId: params.tourId,
+			setlistfmSetlistId: params.setlistfmSetlistId,
+			rawJson: params.rawJson as unknown as Record<string, unknown>,
 			setlistFetchedAt: new Date(),
-			attendanceStatus: status
+			updatedAt: new Date()
 		})
-		.returning();
+		.onConflictDoUpdate({
+			target: [performances.showId, performances.artistId],
+			set: {
+				billingOrder: params.billingOrder,
+				tourId: params.tourId,
+				setlistfmSetlistId: params.setlistfmSetlistId,
+				rawJson: params.rawJson as unknown as Record<string, unknown>,
+				setlistFetchedAt: new Date(),
+				updatedAt: new Date()
+			}
+		})
+		.returning({ id: performances.id });
+	return row.id;
+}
 
-	const [setlistRow] = await db
-		.insert(setlists)
-		.values({
-			attendanceId: attendance.id,
-			rawJson: setlist as unknown as Record<string, unknown>,
-			tourName: setlist.tour?.name ?? ''
-		})
-		.returning();
+async function replaceSetlistSongs(
+	db: DB,
+	performanceId: number,
+	performingArtistId: number,
+	setlist: SetlistFmSetlist
+): Promise<void> {
+	await db.delete(setlistSongs).where(eq(setlistSongs.performanceId, performanceId));
 
 	for (let setIdx = 0; setIdx < setlist.sets.set.length; setIdx++) {
 		const set = setlist.sets.set[setIdx];
@@ -110,25 +165,13 @@ export async function saveAttendance(
 		for (let songIdx = 0; songIdx < set.song.length; songIdx++) {
 			const songData = set.song[songIdx];
 
-			let songArtistId = artist.id;
+			let songArtistId = performingArtistId;
 			let coverArtistId: number | null = null;
 
 			if (songData.cover) {
-				const [coverArtist] = await db
-					.insert(artists)
-					.values({
-						setlistfmMbid: songData.cover.mbid,
-						name: songData.cover.name,
-						sortName: songData.cover.sortName,
-						disambiguation: songData.cover.disambiguation ?? ''
-					})
-					.onConflictDoUpdate({
-						target: artists.setlistfmMbid,
-						set: { name: songData.cover.name }
-					})
-					.returning();
-				songArtistId = coverArtist.id;
-				coverArtistId = coverArtist.id;
+				const id = await upsertArtist(db, songData.cover);
+				songArtistId = id;
+				coverArtistId = id;
 			}
 
 			const normalizedName = normalizeSongName(songData.name);
@@ -140,10 +183,10 @@ export async function saveAttendance(
 					target: [songs.artistId, songs.normalizedName],
 					set: { name: songData.name }
 				})
-				.returning();
+				.returning({ id: songs.id });
 
 			await db.insert(setlistSongs).values({
-				setlistId: setlistRow.id,
+				performanceId,
 				songId: song.id,
 				setNumber,
 				position: songIdx + 1,
@@ -154,6 +197,101 @@ export async function saveAttendance(
 			});
 		}
 	}
+}
 
-	return { attendanceId: attendance.id };
+/**
+ * Sort discovered setlists into billing order. setlist.fm does not expose lineup
+ * order, so we use `lastUpdated` ascending — headliner setlists are typically
+ * posted/edited later than openers. Index 0 = first support, N = headliner.
+ * TODO: expose a manual reorder UI on the detail page.
+ */
+function assignBillingOrder(setlists: SetlistFmSetlist[]): SetlistFmSetlist[] {
+	return [...setlists].sort((a, b) => {
+		const aDate = Date.parse(a.lastUpdated);
+		const bDate = Date.parse(b.lastUpdated);
+		if (aDate !== bDate) return aDate - bDate;
+		return a.id.localeCompare(b.id);
+	});
+}
+
+export async function persistShowFromSetlists(
+	db: DB,
+	allSetlists: SetlistFmSetlist[]
+): Promise<{ showId: number; performanceCount: number }> {
+	if (allSetlists.length === 0) throw new Error('persistShowFromSetlists: no setlists provided');
+
+	const venueData = allSetlists[0].venue;
+	const showDate = parseSetlistDate(allSetlists[0].eventDate);
+
+	const venueId = await upsertVenue(db, venueData);
+	const showId = await upsertShow(db, venueId, showDate);
+
+	const ordered = assignBillingOrder(allSetlists);
+
+	for (let i = 0; i < ordered.length; i++) {
+		const setlist = ordered[i];
+		const artistId = await upsertArtist(db, setlist.artist);
+		const tourId = setlist.tour?.name ? await upsertTour(db, artistId, setlist.tour.name) : null;
+
+		const performanceId = await upsertPerformance(db, {
+			showId,
+			artistId,
+			billingOrder: i,
+			tourId,
+			setlistfmSetlistId: setlist.id,
+			rawJson: setlist
+		});
+
+		await replaceSetlistSongs(db, performanceId, artistId, setlist);
+	}
+
+	await db.update(shows).set({ lastSyncedAt: new Date() }).where(eq(shows.id, showId));
+
+	return { showId, performanceCount: ordered.length };
+}
+
+export async function saveAttendanceFromSeed(
+	db: DB,
+	client: SetlistFmClient,
+	params: {
+		seedSetlistId: string;
+		status: 'confirmed' | 'planned';
+		userId: number;
+		notes?: string;
+	}
+): Promise<{ attendanceId: number; showId: number; performanceCount: number }> {
+	const seed = await client.getSetlist(params.seedSetlistId);
+
+	const discovered = await client.searchAllSetlistsAtVenueOnDate(
+		seed.venue.id,
+		seed.eventDate
+	);
+
+	const byId = new Map<string, SetlistFmSetlist>();
+	byId.set(seed.id, seed);
+	for (const s of discovered) byId.set(s.id, s);
+	const allSetlists = [...byId.values()];
+
+	const { showId, performanceCount } = await persistShowFromSetlists(db, allSetlists);
+
+	const [att] = await db
+		.insert(attendances)
+		.values({
+			userId: params.userId,
+			showId,
+			attendanceStatus: params.status,
+			notes: params.notes ?? '',
+			updatedAt: new Date()
+		})
+		.onConflictDoUpdate({
+			target: [attendances.userId, attendances.showId],
+			set: {
+				attendanceStatus: params.status,
+				notes: params.notes ?? '',
+				updatedAt: new Date()
+			}
+		})
+		.returning({ id: attendances.id });
+
+	return { attendanceId: att.id, showId, performanceCount };
 }
