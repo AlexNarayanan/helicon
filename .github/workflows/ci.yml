@@ -28,6 +28,7 @@ jobs:
     env:
       DATABASE_URL: postgres://helicon:helicon_test@localhost:7001/helicon
       SETLISTFM_API_KEY: test_key
+      TESTCONTAINERS_RYUK_DISABLED: 'true'
 
     steps:
       - uses: actions/checkout@v4
@@ -53,8 +54,11 @@ jobs:
       - name: Unit tests
         run: pnpm test
 
-      - name: DB integration tests (requires Docker)
+      - name: DB integration tests
         run: pnpm test:db
+
+      - name: API integration tests
+        run: pnpm test:api
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium

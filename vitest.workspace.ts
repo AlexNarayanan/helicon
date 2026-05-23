@@ -1,4 +1,16 @@
 import { defineWorkspace } from 'vitest/config';
+import { existsSync } from 'fs';
+
+function containerEnv(): Record<string, string> {
+	if (process.env.DOCKER_HOST) return { TESTCONTAINERS_RYUK_DISABLED: 'true' };
+	const uid = process.getuid?.() ?? 1000;
+	const xdgRuntime = process.env.XDG_RUNTIME_DIR ?? `/run/user/${uid}`;
+	const podmanSock = `${xdgRuntime}/podman/podman.sock`;
+	return {
+		TESTCONTAINERS_RYUK_DISABLED: 'true',
+		...(existsSync(podmanSock) ? { DOCKER_HOST: `unix://${podmanSock}` } : {})
+	};
+}
 
 export default defineWorkspace([
 	{
@@ -18,7 +30,8 @@ export default defineWorkspace([
 			exclude: ['tests/e2e/**', 'tests/visual/**'],
 			globals: true,
 			environment: 'node',
-			testTimeout: 120_000
+			testTimeout: 120_000,
+			env: containerEnv()
 		}
 	},
 	{
@@ -30,7 +43,8 @@ export default defineWorkspace([
 			],
 			globals: true,
 			environment: 'node',
-			testTimeout: 120_000
+			testTimeout: 120_000,
+			env: containerEnv()
 		}
 	}
 ]);
