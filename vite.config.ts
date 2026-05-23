@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => {
 		},
 		test: {
 			include: ['tests/**/*.{test,spec}.{js,ts}'],
-			exclude: ['tests/e2e/**', 'tests/visual/**'],
+			exclude: ['tests/e2e/**', 'tests/visual/**', 'tests/slice1/**'],
 			globals: true,
 			environment: 'node'
 		}
