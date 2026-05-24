@@ -39,6 +39,13 @@
 	let errorMsg = $state('');
 	let resyncing = $state(false);
 
+	// Edit mode state
+	let editing = $state(false);
+	let localPerfs = $state<Performance[]>([]);
+	let pendingNames = $state<Record<number, string>>({});
+	let savingName = $state<Record<number, boolean>>({});
+	let deletingId = $state<number | null>(null);
+
 	function formatDate(dateStr: string): string {
 		const [year, month, day] = dateStr.split('-');
 		const d = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
@@ -101,6 +108,88 @@
 			errorMsg = e instanceof Error ? e.message : 'Fetch failed';
 		} finally {
 			resyncing = false;
+		}
+	}
+
+	function startEdit() {
+		if (!attendance) return;
+		localPerfs = attendance.performances.map((p) => ({ ...p }));
+		pendingNames = {};
+		for (const p of attendance.performances) {
+			pendingNames[p.id] = p.artistName;
+		}
+		editing = true;
+	}
+
+	async function stopEdit() {
+		editing = false;
+		await load();
+	}
+
+	async function saveArtistName(perfId: number) {
+		const name = (pendingNames[perfId] ?? '').trim();
+		const current = localPerfs.find((p) => p.id === perfId)?.artistName ?? '';
+		if (!name || name === current) return;
+
+		savingName[perfId] = true;
+		try {
+			const res = await fetch(`/api/performances/${perfId}`, {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ artistName: name })
+			});
+			if (!res.ok) throw new Error(await res.text());
+			const idx = localPerfs.findIndex((p) => p.id === perfId);
+			if (idx !== -1) localPerfs[idx] = { ...localPerfs[idx], artistName: name };
+		} catch (e) {
+			errorMsg = e instanceof Error ? e.message : 'Failed to rename';
+		} finally {
+			savingName[perfId] = false;
+		}
+	}
+
+	async function moveUp(index: number) {
+		if (index <= 0) return;
+		const temp = localPerfs[index - 1];
+		localPerfs[index - 1] = localPerfs[index];
+		localPerfs[index] = temp;
+		await sendReorder();
+	}
+
+	async function moveDown(index: number) {
+		if (index >= localPerfs.length - 1) return;
+		const temp = localPerfs[index + 1];
+		localPerfs[index + 1] = localPerfs[index];
+		localPerfs[index] = temp;
+		await sendReorder();
+	}
+
+	async function sendReorder() {
+		if (!attendance) return;
+		try {
+			const res = await fetch(`/api/shows/${attendance.showId}/reorder`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ performanceIds: localPerfs.map((p) => p.id) })
+			});
+			if (!res.ok) throw new Error(await res.text());
+		} catch (e) {
+			errorMsg = e instanceof Error ? e.message : 'Failed to reorder';
+		}
+	}
+
+	async function deletePerformance(perfId: number) {
+		if (!confirm('Remove this act from the show?')) return;
+		deletingId = perfId;
+		try {
+			const res = await fetch(`/api/performances/${perfId}`, { method: 'DELETE' });
+			if (!res.ok) throw new Error(await res.text());
+			localPerfs = localPerfs.filter((p) => p.id !== perfId);
+			delete pendingNames[perfId];
+		} catch (e) {
+			errorMsg = e instanceof Error ? e.message : 'Failed to delete';
+		} finally {
+			deletingId = null;
 		}
 	}
 
@@ -167,25 +256,101 @@
 			{#if attendance.performances.length === 0}
 				<p class="text-sm" style="color: var(--color-text-muted);">No performances recorded.</p>
 			{:else}
-				{#each attendance.performances as perf (perf.id)}
+				<div class="mb-4 flex items-center justify-between">
+					<span
+						class="text-xs font-semibold uppercase tracking-widest"
+						style="color: var(--color-text-muted);"
+					>Lineup</span>
+					{#if editing}
+						<button
+							onclick={stopEdit}
+							class="rounded px-3 py-1 text-xs font-semibold"
+							style="background-color: var(--color-primary); color: var(--color-surface);"
+						>
+							Done
+						</button>
+					{:else}
+						<button
+							onclick={startEdit}
+							class="rounded px-3 py-1 text-xs font-medium"
+							style="background-color: var(--color-border); color: var(--color-text);"
+						>
+							Edit lineup
+						</button>
+					{/if}
+				</div>
+
+				{#each (editing ? localPerfs : attendance.performances) as perf, i (perf.id)}
 					<section
 						data-testid="performance"
 						data-billing-order={perf.billingOrder}
 						class="mb-10"
 					>
-						<div class="mb-3 flex items-baseline gap-3">
-							<h2 class="text-2xl font-bold" style="color: var(--color-text);">
-								{perf.artistName}
-							</h2>
-							{#if performanceLabel(perf, attendance.performances.length)}
-								<span
-									class="rounded-full px-2 py-0.5 text-xs font-medium"
-									style="background-color: var(--color-border); color: var(--color-text-muted);"
+						{#if editing}
+							<div class="mb-3 flex items-center gap-2">
+								<div class="flex flex-col gap-0.5">
+									<button
+										onclick={() => moveUp(i)}
+										disabled={i === 0}
+										title="Move up"
+										class="rounded px-1.5 py-0.5 text-xs leading-none disabled:opacity-25"
+										style="background-color: var(--color-border); color: var(--color-text-muted);"
+									>▲</button>
+									<button
+										onclick={() => moveDown(i)}
+										disabled={i === localPerfs.length - 1}
+										title="Move down"
+										class="rounded px-1.5 py-0.5 text-xs leading-none disabled:opacity-25"
+										style="background-color: var(--color-border); color: var(--color-text-muted);"
+									>▼</button>
+								</div>
+
+								<input
+									type="text"
+									value={pendingNames[perf.id]}
+									oninput={(e) => { pendingNames[perf.id] = e.currentTarget.value; }}
+									onblur={() => saveArtistName(perf.id)}
+									onkeydown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
+									disabled={savingName[perf.id]}
+									class="min-w-0 flex-1 rounded px-2 py-1 text-xl font-bold"
+									style="background-color: var(--color-surface-alt); color: var(--color-text); border: 1px solid var(--color-border); outline-color: var(--color-primary);"
+								/>
+
+								{#if localPerfs.length > 1}
+									<span
+										class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"
+										style="background-color: var(--color-border); color: var(--color-text-muted);"
+									>
+										{i === 0 ? 'Headliner' : 'Support'}
+									</span>
+								{/if}
+
+								<button
+									onclick={() => deletePerformance(perf.id)}
+									disabled={deletingId === perf.id}
+									title="Remove from show"
+									class="shrink-0 rounded px-2 py-1 text-sm font-bold"
+									style="color: #ef4444; background-color: color-mix(in srgb, #ef4444 12%, transparent);"
 								>
-									{performanceLabel(perf, attendance.performances.length)}
-								</span>
-							{/if}
-						</div>
+									{deletingId === perf.id ? '…' : '✕'}
+								</button>
+							</div>
+						{:else}
+							<div class="mb-3 flex items-baseline gap-3">
+								<h2 class="text-2xl font-bold" style="color: var(--color-text);">
+									{perf.artistName}
+								</h2>
+								{#if performanceLabel(perf, attendance.performances.length)}
+									<span
+										class="rounded-full px-2 py-0.5 text-xs font-medium"
+										style="background-color: var(--color-border); color: var(--color-text-muted);"
+									>
+										{performanceLabel(perf, attendance.performances.length)}
+									</span>
+								{/if}
+							</div>
+						{/if}
+
 						{#if perf.tourName}
 							<p class="mb-3 text-sm" style="color: var(--color-text-muted);">{perf.tourName}</p>
 						{/if}

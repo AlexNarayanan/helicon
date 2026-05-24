@@ -1,7 +1,6 @@
 <script lang="ts">
 	import 'maplibre-gl/dist/maplibre-gl.css';
 	import { onMount, onDestroy } from 'svelte';
-	import type { StyleSpecification } from 'maplibre-gl';
 
 	type VenueShow = {
 		showId: number;
@@ -30,11 +29,7 @@
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	let markerInstances: any[] = [];
 
-	const MAP_STYLE: StyleSpecification = {
-		version: 8,
-		sources: {},
-		layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#0f172a' } }]
-	};
+	const MAP_STYLE = 'https://tiles.openfreemap.org/styles/dark';
 
 	function buildPopupHTML(venue: VenueData): string {
 		const location = [venue.venueCity, venue.venueState, venue.venueCountry]
