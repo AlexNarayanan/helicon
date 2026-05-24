@@ -8,6 +8,13 @@ export const THEME_LABELS: Record<Theme, string> = {
 	paper: 'Paper'
 };
 
+export const THEME_COLORS: Record<Theme, string> = {
+	mythos: '#7c5cbf',
+	vinyl: '#e63946',
+	neon: '#00f5d4',
+	paper: '#2b4162'
+};
+
 const STORAGE_KEY = 'helicon-theme';
 const DEFAULT_THEME: Theme = 'mythos';
 

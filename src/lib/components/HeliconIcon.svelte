@@ -20,23 +20,28 @@
 		if (browser) cancelAnimationFrame(raf);
 	});
 
-	function sinePath(offsetY: number, amplitude: number, phaseShift: number): string {
-		const steps = 20;
-		const xStart = 8;
-		const xEnd = size - 8;
-		const points: string[] = [];
+	const STRING_CENTERS = [0.16, 0.30, 0.50, 0.70, 0.84];
+	const STRING_COLORS = [
+		'var(--color-primary)',
+		'var(--color-secondary)',
+		'var(--color-accent)',
+		'var(--color-secondary)',
+		'var(--color-primary)'
+	];
+
+	function stringPath(cy: number, index: number): string {
+		const steps = 28;
+		const pts: string[] = [];
 		for (let i = 0; i <= steps; i++) {
 			const t = i / steps;
-			const x = xStart + t * (xEnd - xStart);
-			const y = offsetY + Math.sin(t * Math.PI * 2 + phase + phaseShift) * amplitude;
-			points.push(`${i === 0 ? 'M' : 'L'}${x.toFixed(2)},${y.toFixed(2)}`);
+			const x = size * 0.07 + t * (size * 0.83);
+			const y = cy * size + Math.sin(t * Math.PI * 3 + phase + index * Math.PI / 2.5) * size * 0.010;
+			pts.push(`${i === 0 ? 'M' : 'L'}${x.toFixed(2)},${y.toFixed(2)}`);
 		}
-		return points.join(' ');
+		return pts.join(' ');
 	}
 
-	const string1 = $derived(sinePath(size * 0.45, 2.5, 0));
-	const string2 = $derived(sinePath(size * 0.55, 2.0, Math.PI * 0.66));
-	const string3 = $derived(sinePath(size * 0.65, 2.5, Math.PI * 1.33));
+	const strings = $derived(STRING_CENTERS.map((cy, i) => stringPath(cy, i)));
 </script>
 
 <svg
@@ -47,45 +52,23 @@
 	aria-label="Helicon"
 	role="img"
 >
-	<!-- Lyre frame: two curved arms -->
-	<path
-		d="M{size * 0.28},{size * 0.75} C{size * 0.1},{size * 0.55} {size * 0.1},{size * 0.3} {size *
-			0.28},{size * 0.18}"
-		fill="none"
-		stroke="var(--color-primary)"
-		stroke-width="2"
-		stroke-linecap="round"
-	/>
-	<path
-		d="M{size * 0.72},{size * 0.75} C{size * 0.9},{size * 0.55} {size * 0.9},{size * 0.3} {size *
-			0.72},{size * 0.18}"
-		fill="none"
-		stroke="var(--color-primary)"
-		stroke-width="2"
-		stroke-linecap="round"
-	/>
-	<!-- Crossbar -->
+	<!-- nut -->
 	<line
-		x1={size * 0.2}
-		y1={size * 0.18}
-		x2={size * 0.8}
-		y2={size * 0.18}
+		x1={size * 0.90} y1={size * 0.16}
+		x2={size * 0.90} y2={size * 0.84}
 		stroke="var(--color-primary)"
-		stroke-width="2"
+		stroke-width={size * 0.050}
 		stroke-linecap="round"
 	/>
-	<!-- Base -->
-	<line
-		x1={size * 0.25}
-		y1={size * 0.78}
-		x2={size * 0.75}
-		y2={size * 0.78}
-		stroke="var(--color-primary)"
-		stroke-width="2"
-		stroke-linecap="round"
-	/>
-	<!-- Animated sine-wave strings -->
-	<path d={string1} fill="none" stroke="var(--color-accent)" stroke-width="1.2" stroke-linecap="round" />
-	<path d={string2} fill="none" stroke="var(--color-secondary)" stroke-width="1.2" stroke-linecap="round" />
-	<path d={string3} fill="none" stroke="var(--color-accent)" stroke-width="1.2" stroke-linecap="round" />
+	<!-- fret lines -->
+	<line x1={size*0.69} y1={size*0.16} x2={size*0.69} y2={size*0.84}
+		stroke="var(--color-primary)" stroke-width={size*0.022} stroke-linecap="round" opacity="0.45" />
+	<line x1={size*0.48} y1={size*0.16} x2={size*0.48} y2={size*0.84}
+		stroke="var(--color-primary)" stroke-width={size*0.022} stroke-linecap="round" opacity="0.45" />
+	<line x1={size*0.27} y1={size*0.16} x2={size*0.27} y2={size*0.84}
+		stroke="var(--color-primary)" stroke-width={size*0.022} stroke-linecap="round" opacity="0.45" />
+	<!-- animated strings -->
+	{#each strings as d, i}
+		<path {d} fill="none" stroke={STRING_COLORS[i]} stroke-width={size * 0.030} stroke-linecap="round" />
+	{/each}
 </svg>

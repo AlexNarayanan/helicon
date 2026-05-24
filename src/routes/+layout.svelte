@@ -1,7 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import { onMount } from 'svelte';
-	import { applyTheme, loadTheme, saveTheme, THEMES, THEME_LABELS, type Theme } from '$lib/themes';
+	import { applyTheme, loadTheme, saveTheme, THEMES, THEME_LABELS, THEME_COLORS, type Theme } from '$lib/themes';
 	import HeliconIcon from '$lib/components/HeliconIcon.svelte';
 
 	let { children } = $props();
@@ -68,7 +68,7 @@
 						onclick={() => setTheme(theme)}
 						title={THEME_LABELS[theme]}
 						class="h-5 w-5 rounded-full border-2 transition-all"
-						style="background-color: var(--color-primary); border-color: {currentTheme === theme
+						style="background-color: {THEME_COLORS[theme]}; border-color: {currentTheme === theme
 							? 'var(--color-text)'
 							: 'transparent'};"
 						data-theme-swatch={theme}
