@@ -1,9 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36">
-  <path d="M10,27 C3.6,19.8 3.6,10.8 10,6.5" fill="none" stroke="#7c5cbf" stroke-width="2" stroke-linecap="round"/>
-  <path d="M26,27 C32.4,19.8 32.4,10.8 26,6.5" fill="none" stroke="#7c5cbf" stroke-width="2" stroke-linecap="round"/>
-  <line x1="7.2" y1="6.5" x2="28.8" y2="6.5" stroke="#7c5cbf" stroke-width="2" stroke-linecap="round"/>
-  <line x1="9" y1="28.1" x2="27" y2="28.1" stroke="#7c5cbf" stroke-width="2" stroke-linecap="round"/>
-  <path d="M8,16.2 Q12,13.7 18,16.2 Q24,18.7 28,16.2" fill="none" stroke="#c49a2e" stroke-width="1.2" stroke-linecap="round"/>
-  <path d="M8,19.8 Q12,17.3 18,19.8 Q24,22.3 28,19.8" fill="none" stroke="#4a9cc5" stroke-width="1.2" stroke-linecap="round"/>
-  <path d="M8,23.4 Q12,20.9 18,23.4 Q24,25.9 28,23.4" fill="none" stroke="#c49a2e" stroke-width="1.2" stroke-linecap="round"/>
+  <!-- nut -->
+  <line x1="32.4" y1="5.76" x2="32.4" y2="30.24" stroke="#7c5cbf" stroke-width="1.8" stroke-linecap="round"/>
+  <!-- fret lines -->
+  <line x1="24.84" y1="5.76" x2="24.84" y2="30.24" stroke="#7c5cbf" stroke-width="0.79" stroke-linecap="round" opacity="0.45"/>
+  <line x1="17.28" y1="5.76" x2="17.28" y2="30.24" stroke="#7c5cbf" stroke-width="0.79" stroke-linecap="round" opacity="0.45"/>
+  <line x1="9.72"  y1="5.76" x2="9.72"  y2="30.24" stroke="#7c5cbf" stroke-width="0.79" stroke-linecap="round" opacity="0.45"/>
+  <!-- strings: primary / secondary / accent / secondary / primary -->
+  <line x1="2.52" y1="5.76"  x2="32.4" y2="5.76"  stroke="#7c5cbf" stroke-width="1.08" stroke-linecap="round"/>
+  <line x1="2.52" y1="10.8"  x2="32.4" y2="10.8"  stroke="#4a9cc5" stroke-width="1.08" stroke-linecap="round"/>
+  <line x1="2.52" y1="18"    x2="32.4" y2="18"    stroke="#c49a2e" stroke-width="1.08" stroke-linecap="round"/>
+  <line x1="2.52" y1="25.2"  x2="32.4" y2="25.2"  stroke="#4a9cc5" stroke-width="1.08" stroke-linecap="round"/>
+  <line x1="2.52" y1="30.24" x2="32.4" y2="30.24" stroke="#7c5cbf" stroke-width="1.08" stroke-linecap="round"/>
 </svg>
