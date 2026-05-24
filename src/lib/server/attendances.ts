@@ -28,26 +28,77 @@ export function parseSetlistDate(eventDate: string): string {
 
 export async function searchSetlists(
 	client: SetlistFmClient,
-	params: { artistName: string; date?: string; venueName?: string }
+	params: { artistName: string; date?: string; venueName?: string; city?: string }
 ): Promise<SetlistFmSetlist[]> {
 	const artistRes = await client.searchArtists({ artistName: params.artistName });
 	if (!artistRes.artist.length) return [];
 
-	const mbid = artistRes.artist[0].mbid;
+	// setlist.fm may return multiple artists with similar names (e.g. "Tesseract" before
+	// "TesseracT"). Try up to 3 candidates whose names are plausible matches so we don't
+	// silently use the wrong MBID.
+	const queryLower = params.artistName.toLowerCase();
+	const candidates = artistRes.artist
+		.filter((a) => {
+			const n = a.name.toLowerCase();
+			return n.startsWith(queryLower) || queryLower.startsWith(n);
+		})
+		.slice(0, 3);
+	if (candidates.length === 0) candidates.push(artistRes.artist[0]);
 
 	let setlistDate: string | undefined;
+	let targetDateMs: number | undefined;
 	if (params.date) {
 		const [year, month, day] = params.date.split('-');
 		setlistDate = `${day}-${month}-${year}`;
+		targetDateMs = Date.UTC(+year, +month - 1, +day);
 	}
 
-	const setlistRes = await client.searchSetlists({
-		artistMbid: mbid,
-		date: setlistDate,
-		venueName: params.venueName
-	});
+	// setlist.fm returns 404 when there are zero results — not a real error
+	async function trySearch(
+		p: Parameters<typeof client.searchSetlists>[0]
+	): Promise<SetlistFmSetlist[]> {
+		try {
+			return (await client.searchSetlists(p)).setlist;
+		} catch (err) {
+			if (err instanceof Error && err.message.includes('404')) return [];
+			throw err;
+		}
+	}
 
-	return setlistRes.setlist;
+	async function searchForMbid(mbid: string): Promise<SetlistFmSetlist[]> {
+		// Phase 1: exact date + venue + city (all user-supplied constraints)
+		const exact = await trySearch({
+			artistMbid: mbid,
+			date: setlistDate,
+			venueName: params.venueName,
+			cityName: params.city
+		});
+		if (exact.length > 0) return exact;
+
+		if (!setlistDate || targetDateMs === undefined) return [];
+
+		// Phase 2: exact date only — venue/city text may not match setlist.fm's naming
+		const dateOnly = await trySearch({ artistMbid: mbid, date: setlistDate });
+		if (dateOnly.length > 0) return dateOnly;
+
+		// Phase 3: whole year, artist only — catches API quirks where the exact date
+		// param returns nothing; sort by proximity so the closest show floats to the top
+		const year = +params.date!.split('-')[0];
+		const yearResults = await trySearch({ artistMbid: mbid, year });
+		return yearResults.sort((a, b) => {
+			const [ad, am, ay] = a.eventDate.split('-').map(Number);
+			const [bd, bm, by] = b.eventDate.split('-').map(Number);
+			const distA = Math.abs(Date.UTC(ay, am - 1, ad) - targetDateMs!);
+			const distB = Math.abs(Date.UTC(by, bm - 1, bd) - targetDateMs!);
+			return distA - distB;
+		});
+	}
+
+	for (const candidate of candidates) {
+		const results = await searchForMbid(candidate.mbid);
+		if (results.length > 0) return results;
+	}
+	return [];
 }
 
 async function upsertArtist(db: DB, a: SetlistFmArtist): Promise<number> {

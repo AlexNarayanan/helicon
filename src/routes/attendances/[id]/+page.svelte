@@ -51,6 +51,13 @@
 		return 'Support';
 	}
 
+	function showIsInPast(dateStr: string): boolean {
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		const [y, m, d] = dateStr.split('-').map(Number);
+		return new Date(y, m - 1, d) < today;
+	}
+
 	async function load() {
 		try {
 			const res = await fetch(`/api/attendances/${data.id}`);
@@ -77,6 +84,26 @@
 		}
 	}
 
+	async function fetchSetlist() {
+		if (!attendance) return;
+		resyncing = true;
+		try {
+			const resyncRes = await fetch(`/api/shows/${attendance.showId}/resync`, { method: 'POST' });
+			if (!resyncRes.ok) throw new Error(await resyncRes.text());
+			const patchRes = await fetch(`/api/attendances/${attendance.id}`, {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ status: 'confirmed' })
+			});
+			if (!patchRes.ok) throw new Error(await patchRes.text());
+			await load();
+		} catch (e) {
+			errorMsg = e instanceof Error ? e.message : 'Fetch failed';
+		} finally {
+			resyncing = false;
+		}
+	}
+
 	onMount(load);
 </script>
 
@@ -91,9 +118,20 @@
 		<p style="color: #ef4444;">{errorMsg}</p>
 	{:else if attendance}
 		<div data-testid="attendance-detail">
-			<h1 class="mb-1 text-3xl font-bold" style="color: var(--color-text);">
-				{attendance.venue.name}
-			</h1>
+			<div class="mb-2 flex items-center gap-3">
+				<h1 class="text-3xl font-bold" style="color: var(--color-text);">
+					{attendance.venue.name}
+				</h1>
+				<span
+					data-testid="status-badge"
+					class="rounded-full px-2 py-0.5 text-xs font-medium"
+					style="{attendance.status === 'confirmed'
+						? 'background-color: var(--color-primary); color: var(--color-surface);'
+						: 'background-color: var(--color-border); color: var(--color-text-muted);'}"
+				>
+					{attendance.status}
+				</span>
+			</div>
 			<p class="mb-1 text-lg" style="color: var(--color-text-muted);">
 				{attendance.venue.city}{attendance.venue.state ? `, ${attendance.venue.state}` : ''}
 			</p>
@@ -102,14 +140,28 @@
 			</p>
 
 			<div class="mb-6">
-				<button
-					onclick={resync}
-					disabled={resyncing}
-					class="rounded px-3 py-1.5 text-xs font-semibold"
-					style="background-color: var(--color-border); color: var(--color-text);"
-				>
-					{resyncing ? 'Syncing…' : 'Re-sync from setlist.fm'}
-				</button>
+				{#if attendance.status === 'planned' && showIsInPast(attendance.showDate)}
+					<button
+						onclick={fetchSetlist}
+						disabled={resyncing}
+						class="rounded px-3 py-1.5 text-xs font-semibold"
+						style="background-color: var(--color-primary); color: var(--color-surface);"
+					>
+						{resyncing ? 'Fetching…' : 'Fetch setlist'}
+					</button>
+					<p class="mt-1 text-xs" style="color: var(--color-text-muted);">
+						This show has passed — we'll pull all setlists and mark it confirmed.
+					</p>
+				{:else}
+					<button
+						onclick={resync}
+						disabled={resyncing}
+						class="rounded px-3 py-1.5 text-xs font-semibold"
+						style="background-color: var(--color-border); color: var(--color-text);"
+					>
+						{resyncing ? 'Syncing…' : 'Re-sync from setlist.fm'}
+					</button>
+				{/if}
 			</div>
 
 			{#if attendance.performances.length === 0}

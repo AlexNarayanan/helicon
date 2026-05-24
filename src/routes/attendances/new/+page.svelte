@@ -5,6 +5,7 @@
 
 	let artistName = $state('');
 	let date = $state('');
+	let city = $state('');
 	let venueName = $state('');
 	let phase = $state<Phase>('idle');
 	let results = $state<SetlistFmSetlist[]>([]);
@@ -18,6 +19,7 @@
 
 		const params = new URLSearchParams({ artistName });
 		if (date) params.set('date', date);
+		if (city) params.set('city', city);
 		if (venueName) params.set('venueName', venueName);
 
 		try {
@@ -99,6 +101,20 @@
 				id="date-input"
 				type="date"
 				bind:value={date}
+				class="rounded border px-3 py-2 text-sm"
+				style="background: var(--color-surface); border-color: var(--color-border); color: var(--color-text);"
+			/>
+		</div>
+
+		<div class="flex flex-col gap-1">
+			<label for="city-input" class="text-sm font-medium" style="color: var(--color-text);">
+				City <span style="color: var(--color-text-muted);">(optional)</span>
+			</label>
+			<input
+				id="city-input"
+				type="text"
+				bind:value={city}
+				placeholder="e.g. Boston"
 				class="rounded border px-3 py-2 text-sm"
 				style="background: var(--color-surface); border-color: var(--color-border); color: var(--color-text);"
 			/>

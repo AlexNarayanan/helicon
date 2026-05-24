@@ -142,3 +142,33 @@ export async function GET({ params }) {
 		performances: performancesPayload
 	});
 }
+
+export async function PATCH({ params, request }) {
+	const id = parseInt(params.id);
+	if (isNaN(id)) throw error(400, 'Invalid ID');
+
+	const body = await request.json();
+	const { status, notes } = body as { status?: string; notes?: string };
+
+	if (status !== undefined && status !== 'confirmed' && status !== 'planned') {
+		throw error(400, 'invalid status');
+	}
+
+	const updates: {
+		attendanceStatus?: 'confirmed' | 'planned';
+		notes?: string;
+		updatedAt: Date;
+	} = { updatedAt: new Date() };
+
+	if (status === 'confirmed' || status === 'planned') updates.attendanceStatus = status;
+	if (notes !== undefined) updates.notes = notes;
+
+	const [updated] = await db
+		.update(attendances)
+		.set(updates)
+		.where(eq(attendances.id, id))
+		.returning({ id: attendances.id });
+
+	if (!updated) throw error(404, 'Attendance not found');
+	return json({ id: updated.id });
+}

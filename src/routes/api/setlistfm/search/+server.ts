@@ -8,9 +8,10 @@ export async function GET({ url }) {
 
 	const date = url.searchParams.get('date') ?? undefined;
 	const venueName = url.searchParams.get('venueName') ?? undefined;
+	const city = url.searchParams.get('city') ?? undefined;
 
 	const client = createSetlistFmClient();
-	const results = await searchSetlists(client, { artistName, date, venueName });
+	const results = await searchSetlists(client, { artistName, date, venueName, city });
 
 	return json({ setlists: results });
 }

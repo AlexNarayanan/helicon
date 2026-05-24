@@ -132,6 +132,7 @@ export function createSetlistFmClient(options: SetlistFmClientOptions = {}) {
 			artistMbid?: string;
 			venueId?: string;
 			venueName?: string;
+			cityName?: string;
 			date?: string;
 			year?: number;
 			page?: number;
@@ -140,6 +141,7 @@ export function createSetlistFmClient(options: SetlistFmClientOptions = {}) {
 			if (params.artistMbid) raw.artistMbid = params.artistMbid;
 			if (params.venueId) raw.venueId = params.venueId;
 			if (params.venueName) raw.venueName = params.venueName;
+			if (params.cityName) raw.cityName = params.cityName;
 			if (params.date) raw.date = params.date;
 			if (params.year) raw.year = params.year;
 			return fetchJson('/search/setlists', raw);
