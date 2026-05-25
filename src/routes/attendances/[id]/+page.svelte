@@ -53,6 +53,16 @@
 		return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 	}
 
+	async function parseErrorMessage(res: Response): Promise<string> {
+		const text = await res.text();
+		try {
+			const parsed = JSON.parse(text);
+			return parsed.message ?? text;
+		} catch {
+			return text;
+		}
+	}
+
 	function performanceLabel(p: Performance, total: number): string {
 		if (total === 1) return '';
 		if (p.billingOrder === total - 1) return 'Headliner';
@@ -69,7 +79,7 @@
 	async function load() {
 		try {
 			const res = await fetch(`${base}/api/attendances/${data.id}`);
-			if (!res.ok) throw new Error(await res.text());
+			if (!res.ok) throw new Error(await parseErrorMessage(res));
 			attendance = await res.json();
 		} catch (e) {
 			errorMsg = e instanceof Error ? e.message : 'Failed to load show';
@@ -83,7 +93,7 @@
 		resyncing = true;
 		try {
 			const res = await fetch(`${base}/api/shows/${attendance.showId}/resync`, { method: 'POST' });
-			if (!res.ok) throw new Error(await res.text());
+			if (!res.ok) throw new Error(await parseErrorMessage(res));
 			await load();
 		} catch (e) {
 			errorMsg = e instanceof Error ? e.message : 'Resync failed';
@@ -97,13 +107,13 @@
 		resyncing = true;
 		try {
 			const resyncRes = await fetch(`${base}/api/shows/${attendance.showId}/resync`, { method: 'POST' });
-			if (!resyncRes.ok) throw new Error(await resyncRes.text());
+			if (!resyncRes.ok) throw new Error(await parseErrorMessage(resyncRes));
 			const patchRes = await fetch(`${base}/api/attendances/${attendance.id}`, {
 				method: 'PATCH',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ status: 'confirmed' })
 			});
-			if (!patchRes.ok) throw new Error(await patchRes.text());
+			if (!patchRes.ok) throw new Error(await parseErrorMessage(patchRes));
 			await load();
 		} catch (e) {
 			errorMsg = e instanceof Error ? e.message : 'Fetch failed';
@@ -139,7 +149,7 @@
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ artistName: name })
 			});
-			if (!res.ok) throw new Error(await res.text());
+			if (!res.ok) throw new Error(await parseErrorMessage(res));
 			const idx = localPerfs.findIndex((p) => p.id === perfId);
 			if (idx !== -1) localPerfs[idx] = { ...localPerfs[idx], artistName: name };
 		} catch (e) {
@@ -173,7 +183,7 @@
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ performanceIds: localPerfs.map((p) => p.id) })
 			});
-			if (!res.ok) throw new Error(await res.text());
+			if (!res.ok) throw new Error(await parseErrorMessage(res));
 		} catch (e) {
 			errorMsg = e instanceof Error ? e.message : 'Failed to reorder';
 		}
@@ -184,7 +194,7 @@
 		deletingId = perfId;
 		try {
 			const res = await fetch(`${base}/api/performances/${perfId}`, { method: 'DELETE' });
-			if (!res.ok) throw new Error(await res.text());
+			if (!res.ok) throw new Error(await parseErrorMessage(res));
 			localPerfs = localPerfs.filter((p) => p.id !== perfId);
 			delete pendingNames[perfId];
 		} catch (e) {

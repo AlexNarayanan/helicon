@@ -8,6 +8,14 @@ export async function POST({ params }) {
 	if (isNaN(id)) throw error(400, 'Invalid ID');
 
 	const client = createSetlistFmClient();
-	const result = await resyncShow(db, client, id);
-	return json(result);
+
+	try {
+		const result = await resyncShow(db, client, id);
+		return json(result);
+	} catch (err) {
+		const msg = err instanceof Error ? err.message : 'Resync failed';
+		if (msg.includes('429')) throw error(429, 'setlist.fm rate limit hit — try again in a moment');
+		if (msg.includes('401')) throw error(502, 'Invalid setlist.fm API key — check SETLISTFM_API_KEY');
+		throw error(502, msg);
+	}
 }
