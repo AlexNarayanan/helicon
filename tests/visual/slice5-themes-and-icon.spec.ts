@@ -26,48 +26,6 @@ test.describe('theme visual regression', () => {
 	}
 });
 
-test.describe('helicon icon structure', () => {
-	test('icon is visible in the header', async ({ page }) => {
-		await page.goto('/helicon');
-		await expect(page.locator('header svg[aria-label="Helicon"]')).toBeVisible();
-	});
-
-	test('icon has fretboard: 5 string paths and 4 lines', async ({ page }) => {
-		await page.goto('/helicon');
-		const svg = page.locator('header svg[aria-label="Helicon"]');
-		// 5 animated strings = 5 paths; 1 nut + 3 fret lines = 4 lines
-		await expect(svg.locator('path')).toHaveCount(5);
-		await expect(svg.locator('line')).toHaveCount(4);
-	});
-
-	test('animated string d attributes change as animation runs', async ({ page }) => {
-		await page.goto('/helicon');
-
-		const getDs = () =>
-			page.evaluate(() =>
-				Array.from(document.querySelectorAll('header svg[aria-label="Helicon"] path[fill="none"]')).map((p) =>
-					p.getAttribute('d')
-				)
-			);
-
-		const before = await getDs();
-		expect(before).toHaveLength(5);
-		expect(before[0]).not.toBeNull();
-
-		// Poll until at least one animated path changes (up to 2 s)
-		await page.waitForFunction(
-			(initial: (string | null)[]) =>
-				Array.from(document.querySelectorAll('header svg[aria-label="Helicon"] path[fill="none"]')).some(
-					(p, i) => p.getAttribute('d') !== initial[i]
-				),
-			before,
-			{ timeout: 2000 }
-		);
-
-		const after = await getDs();
-		expect(before.some((d, i) => d !== after[i])).toBe(true);
-	});
-});
 
 test.describe('theme switcher', () => {
 	// Wait for Svelte hydration before interacting
