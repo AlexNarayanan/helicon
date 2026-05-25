@@ -32,12 +32,12 @@ test.describe('helicon icon structure', () => {
 		await expect(page.locator('header svg[aria-label="Helicon"]')).toBeVisible();
 	});
 
-	test('icon has lyre frame: 5 paths and 2 lines', async ({ page }) => {
+	test('icon has fretboard: 5 string paths and 4 lines', async ({ page }) => {
 		await page.goto('/helicon');
 		const svg = page.locator('header svg[aria-label="Helicon"]');
-		// 2 curved arms + 3 animated strings = 5 paths; crossbar + base = 2 lines
+		// 5 animated strings = 5 paths; 1 nut + 3 fret lines = 4 lines
 		await expect(svg.locator('path')).toHaveCount(5);
-		await expect(svg.locator('line')).toHaveCount(2);
+		await expect(svg.locator('line')).toHaveCount(4);
 	});
 
 	test('animated string d attributes change as animation runs', async ({ page }) => {
@@ -45,19 +45,19 @@ test.describe('helicon icon structure', () => {
 
 		const getDs = () =>
 			page.evaluate(() =>
-				Array.from(document.querySelectorAll('header svg path[stroke-width="1.2"]')).map((p) =>
+				Array.from(document.querySelectorAll('header svg[aria-label="Helicon"] path[fill="none"]')).map((p) =>
 					p.getAttribute('d')
 				)
 			);
 
 		const before = await getDs();
-		expect(before).toHaveLength(3);
+		expect(before).toHaveLength(5);
 		expect(before[0]).not.toBeNull();
 
 		// Poll until at least one animated path changes (up to 2 s)
 		await page.waitForFunction(
 			(initial: (string | null)[]) =>
-				Array.from(document.querySelectorAll('header svg path[stroke-width="1.2"]')).some(
+				Array.from(document.querySelectorAll('header svg[aria-label="Helicon"] path[fill="none"]')).some(
 					(p, i) => p.getAttribute('d') !== initial[i]
 				),
 			before,
