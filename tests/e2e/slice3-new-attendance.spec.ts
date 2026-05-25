@@ -73,7 +73,7 @@ test.describe('new attendance flow', () => {
 	});
 
 	test('page renders form with three inputs and lineup-discovery hint', async ({ page }) => {
-		await page.goto('/attendances/new');
+		await page.goto('/helicon/attendances/new');
 		await expect(page.getByRole('heading', { name: 'Log a show' })).toBeVisible();
 		await expect(page.getByLabel('Artist')).toBeVisible();
 		await expect(page.getByLabel('Date')).toBeVisible();
@@ -82,7 +82,7 @@ test.describe('new attendance flow', () => {
 	});
 
 	test('search shows setlist results', async ({ page }) => {
-		await page.goto('/attendances/new');
+		await page.goto('/helicon/attendances/new');
 		await page.waitForLoadState('networkidle');
 		await page.getByLabel('Artist').fill('Metallica');
 		await page.getByLabel('Date').fill('2023-08-11');
@@ -96,7 +96,7 @@ test.describe('new attendance flow', () => {
 	test('saving a result shows confirmation that links to the show with both artists', async ({
 		page
 	}) => {
-		await page.goto('/attendances/new');
+		await page.goto('/helicon/attendances/new');
 		await page.waitForLoadState('networkidle');
 		await page.getByLabel('Artist').fill('Metallica');
 		await page.getByLabel('Date').fill('2023-08-11');

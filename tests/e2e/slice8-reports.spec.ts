@@ -96,7 +96,7 @@ test.describe('reports page', () => {
 	});
 
 	test('renders the reports page with default report (most played songs)', async ({ page }) => {
-		await page.goto('/reports');
+		await page.goto('/helicon/reports');
 		await expect(page.getByTestId('report-type-select')).toBeVisible({ timeout: 10000 });
 		await expect(page.getByTestId('report-results')).toBeVisible({ timeout: 10000 });
 		await expect(page.getByTestId('report-results')).toContainText('Master of Puppets');
@@ -105,7 +105,7 @@ test.describe('reports page', () => {
 	});
 
 	test('shows filters panel for filterable report types', async ({ page }) => {
-		await page.goto('/reports');
+		await page.goto('/helicon/reports');
 		await expect(page.getByTestId('filters-panel')).toBeVisible({ timeout: 10000 });
 		// Artist filter should be populated from filters API
 		const artistFilter = page.getByTestId('artist-filter');
@@ -114,7 +114,7 @@ test.describe('reports page', () => {
 	});
 
 	test('switching to most rare songs updates the table', async ({ page }) => {
-		await page.goto('/reports');
+		await page.goto('/helicon/reports');
 		await expect(page.getByTestId('report-results')).toBeVisible({ timeout: 10000 });
 		await page.getByTestId('report-type-select').selectOption('mostRareSongs');
 		await expect(page.getByTestId('report-results')).toContainText('Blackened', { timeout: 10000 });
@@ -122,7 +122,7 @@ test.describe('reports page', () => {
 	});
 
 	test('switching to most common venues shows venue table', async ({ page }) => {
-		await page.goto('/reports');
+		await page.goto('/helicon/reports');
 		await expect(page.getByTestId('report-results')).toBeVisible({ timeout: 10000 });
 		await page.getByTestId('report-type-select').selectOption('mostCommonVenues');
 		await expect(page.getByTestId('report-results')).toContainText('Madison Square Garden', {
@@ -133,7 +133,7 @@ test.describe('reports page', () => {
 	});
 
 	test('both opener and headliner report shows correct columns', async ({ page }) => {
-		await page.goto('/reports');
+		await page.goto('/helicon/reports');
 		await expect(page.getByTestId('report-results')).toBeVisible({ timeout: 10000 });
 		await page.getByTestId('report-type-select').selectOption('bothOpenerAndHeadliner');
 		await expect(page.getByTestId('report-results')).toContainText('Pantera', { timeout: 10000 });
@@ -142,7 +142,7 @@ test.describe('reports page', () => {
 	});
 
 	test('openers distribution report renders correctly', async ({ page }) => {
-		await page.goto('/reports');
+		await page.goto('/helicon/reports');
 		await expect(page.getByTestId('report-results')).toBeVisible({ timeout: 10000 });
 		await page.getByTestId('report-type-select').selectOption('openersDistribution');
 		await expect(page.getByTestId('report-results')).toContainText('Solo (no openers)', {
@@ -152,7 +152,7 @@ test.describe('reports page', () => {
 	});
 
 	test('no filters panel for non-filterable reports', async ({ page }) => {
-		await page.goto('/reports');
+		await page.goto('/helicon/reports');
 		await expect(page.getByTestId('report-results')).toBeVisible({ timeout: 10000 });
 		await page.getByTestId('report-type-select').selectOption('bothOpenerAndHeadliner');
 		await expect(page.getByTestId('report-results')).toContainText('Pantera', { timeout: 10000 });
@@ -160,7 +160,7 @@ test.describe('reports page', () => {
 	});
 
 	test('results table has correct row count', async ({ page }) => {
-		await page.goto('/reports');
+		await page.goto('/helicon/reports');
 		// mostPlayedSongs has 3 mock rows
 		await expect(page.getByTestId('report-results')).toBeVisible({ timeout: 10000 });
 		const rows = page.getByTestId('report-row');

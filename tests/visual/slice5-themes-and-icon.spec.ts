@@ -13,7 +13,7 @@ test.describe('theme visual regression', () => {
 				localStorage.setItem('helicon-theme', t);
 			}, theme);
 
-			await page.goto('/');
+			await page.goto('/helicon');
 
 			// Wait for data-theme to reflect the chosen theme
 			await page.waitForFunction(
@@ -28,12 +28,12 @@ test.describe('theme visual regression', () => {
 
 test.describe('helicon icon structure', () => {
 	test('icon is visible in the header', async ({ page }) => {
-		await page.goto('/');
+		await page.goto('/helicon');
 		await expect(page.locator('header svg[aria-label="Helicon"]')).toBeVisible();
 	});
 
 	test('icon has lyre frame: 5 paths and 2 lines', async ({ page }) => {
-		await page.goto('/');
+		await page.goto('/helicon');
 		const svg = page.locator('header svg[aria-label="Helicon"]');
 		// 2 curved arms + 3 animated strings = 5 paths; crossbar + base = 2 lines
 		await expect(svg.locator('path')).toHaveCount(5);
@@ -41,7 +41,7 @@ test.describe('helicon icon structure', () => {
 	});
 
 	test('animated string d attributes change as animation runs', async ({ page }) => {
-		await page.goto('/');
+		await page.goto('/helicon');
 
 		const getDs = () =>
 			page.evaluate(() =>
@@ -76,7 +76,7 @@ test.describe('theme switcher', () => {
 	}
 
 	test('clicking a swatch applies the new theme', async ({ page }) => {
-		await page.goto('/');
+		await page.goto('/helicon');
 		await waitForHydration(page);
 
 		await page.locator('[data-theme-swatch="vinyl"]').click();
@@ -84,7 +84,7 @@ test.describe('theme switcher', () => {
 	});
 
 	test('switched theme is saved to localStorage', async ({ page }) => {
-		await page.goto('/');
+		await page.goto('/helicon');
 		await waitForHydration(page);
 
 		await page.locator('[data-theme-swatch="neon"]').click();
@@ -97,7 +97,7 @@ test.describe('theme switcher', () => {
 	});
 
 	test('theme persists across reload', async ({ page }) => {
-		await page.goto('/');
+		await page.goto('/helicon');
 		await waitForHydration(page);
 
 		await page.locator('[data-theme-swatch="paper"]').click();

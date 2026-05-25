@@ -110,14 +110,14 @@ test.describe('attendance list & detail', () => {
 	});
 
 	test('list page shows 3 attendance rows', async ({ page }) => {
-		await page.goto('/attendances');
+		await page.goto('/helicon/attendances');
 		const rows = page.getByTestId('attendance-row');
 		await expect(rows).toHaveCount(3);
 		await expect(rows.first()).toContainText('Madison Square Garden');
 	});
 
 	test('list rows are sorted by date descending and show full lineup', async ({ page }) => {
-		await page.goto('/attendances');
+		await page.goto('/helicon/attendances');
 		const rows = page.getByTestId('attendance-row');
 		// First row: two-artist lineup with headliner first (billing_order desc)
 		await expect(rows.nth(0)).toContainText('Metallica');
@@ -127,7 +127,7 @@ test.describe('attendance list & detail', () => {
 	});
 
 	test('clicking first row navigates to detail page', async ({ page }) => {
-		await page.goto('/attendances');
+		await page.goto('/helicon/attendances');
 		await page.getByTestId('attendance-row').first().getByRole('link').click();
 		await expect(page).toHaveURL(/\/attendances\/1/);
 	});
@@ -135,7 +135,7 @@ test.describe('attendance list & detail', () => {
 	test('detail page shows venue, date, and both performances ordered headliner-first', async ({
 		page
 	}) => {
-		await page.goto('/attendances/1');
+		await page.goto('/helicon/attendances/1');
 		const detail = page.getByTestId('attendance-detail');
 		await expect(detail).toBeVisible();
 		await expect(detail).toContainText('Madison Square Garden');
@@ -152,7 +152,7 @@ test.describe('attendance list & detail', () => {
 	});
 
 	test('detail page shows full setlist with encore for headliner', async ({ page }) => {
-		await page.goto('/attendances/1');
+		await page.goto('/helicon/attendances/1');
 		const headliner = page.getByTestId('performance').first();
 		await expect(headliner).toContainText('Battery');
 		await expect(headliner).toContainText('Master of Puppets');
@@ -162,13 +162,13 @@ test.describe('attendance list & detail', () => {
 	});
 
 	test('detail page has setlist.fm link per performance', async ({ page }) => {
-		await page.goto('/attendances/1');
+		await page.goto('/helicon/attendances/1');
 		const links = page.getByRole('link', { name: /setlist\.fm/ });
 		await expect(links).toHaveCount(2);
 	});
 
 	test('detail page exposes Re-sync action', async ({ page }) => {
-		await page.goto('/attendances/1');
+		await page.goto('/helicon/attendances/1');
 		await expect(page.getByRole('button', { name: /Re-sync/ })).toBeVisible();
 	});
 });

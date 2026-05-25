@@ -73,14 +73,14 @@ test.describe('map visualization', () => {
 	});
 
 	test('renders one marker per venue with coordinates', async ({ page }) => {
-		await page.goto('/viz/map');
+		await page.goto('/helicon/viz/map');
 		const markers = page.getByTestId('map-marker');
 		// 2 out of 3 venues have coords; the third (venueId 3) has null lat/lng
 		await expect(markers).toHaveCount(2, { timeout: 20000 });
 	});
 
 	test('venue with more shows has a larger marker', async ({ page }) => {
-		await page.goto('/viz/map');
+		await page.goto('/helicon/viz/map');
 		await page.waitForSelector('[data-testid="map-marker"]', { timeout: 20000 });
 
 		const msgMarker = page.locator('[data-testid="map-marker"][data-venue-id="1"]');
@@ -95,7 +95,7 @@ test.describe('map visualization', () => {
 	});
 
 	test('click marker opens popup with venue name and lineup', async ({ page }) => {
-		await page.goto('/viz/map');
+		await page.goto('/helicon/viz/map');
 		await page.waitForSelector('[data-testid="map-marker"]', { timeout: 20000 });
 
 		const msgMarker = page.locator('[data-testid="map-marker"][data-venue-id="1"]');
@@ -110,7 +110,7 @@ test.describe('map visualization', () => {
 	});
 
 	test('popup lists all shows at the venue with dates', async ({ page }) => {
-		await page.goto('/viz/map');
+		await page.goto('/helicon/viz/map');
 		await page.waitForSelector('[data-testid="map-marker"]', { timeout: 20000 });
 
 		const msgMarker = page.locator('[data-testid="map-marker"][data-venue-id="1"]');
@@ -123,7 +123,7 @@ test.describe('map visualization', () => {
 	});
 
 	test('venue without coordinates does not get a marker', async ({ page }) => {
-		await page.goto('/viz/map');
+		await page.goto('/helicon/viz/map');
 		await page.waitForSelector('[data-testid="map-marker"]', { timeout: 20000 });
 
 		const noCoordMarker = page.locator('[data-testid="map-marker"][data-venue-id="3"]');

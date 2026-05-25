@@ -48,14 +48,14 @@ test.describe('timeline visualization', () => {
 	});
 
 	test('renders one mark per show', async ({ page }) => {
-		await page.goto('/viz/timeline');
+		await page.goto('/helicon/viz/timeline');
 		// First visit compiles layerchart modules; allow extra time for cold start
 		const marks = page.getByTestId('timeline-mark');
 		await expect(marks).toHaveCount(3, { timeout: 20000 });
 	});
 
 	test('marks have monotonically increasing cx for chronological dates', async ({ page }) => {
-		await page.goto('/viz/timeline');
+		await page.goto('/helicon/viz/timeline');
 		// marks are sorted by date asc in the component, so DOM order matches date order
 		const attrs = await page.locator('[data-testid="timeline-mark"]').evaluateAll((els) =>
 			els.map((el) => ({
@@ -70,7 +70,7 @@ test.describe('timeline visualization', () => {
 	});
 
 	test('tooltip shows headliner name and support count on hover', async ({ page }) => {
-		await page.goto('/viz/timeline');
+		await page.goto('/helicon/viz/timeline');
 		const metallicaMark = page.locator('[data-testid="timeline-mark"][data-date="2023-08-11"]');
 		await metallicaMark.hover();
 		const tooltip = page.getByTestId('timeline-tooltip');
@@ -80,7 +80,7 @@ test.describe('timeline visualization', () => {
 	});
 
 	test('tooltip shows date and venue on hover', async ({ page }) => {
-		await page.goto('/viz/timeline');
+		await page.goto('/helicon/viz/timeline');
 		const ironMaidenMark = page.locator('[data-testid="timeline-mark"][data-date="2022-06-18"]');
 		await ironMaidenMark.hover();
 		const tooltip = page.getByTestId('timeline-tooltip');
@@ -91,7 +91,7 @@ test.describe('timeline visualization', () => {
 	});
 
 	test('legend lists all headliner artist names', async ({ page }) => {
-		await page.goto('/viz/timeline');
+		await page.goto('/helicon/viz/timeline');
 		const legend = page.getByTestId('timeline-legend');
 		await expect(legend).toContainText('Metallica');
 		await expect(legend).toContainText('Iron Maiden');
@@ -99,7 +99,7 @@ test.describe('timeline visualization', () => {
 	});
 
 	test('single-artist show has no support badge in tooltip', async ({ page }) => {
-		await page.goto('/viz/timeline');
+		await page.goto('/helicon/viz/timeline');
 		const toolMark = page.locator('[data-testid="timeline-mark"][data-date="2019-10-25"]');
 		await toolMark.hover();
 		const tooltip = page.getByTestId('timeline-tooltip');

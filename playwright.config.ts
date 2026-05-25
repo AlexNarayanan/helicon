@@ -10,7 +10,7 @@ export default defineConfig({
 	testMatch: '**/*.spec.ts',
 	timeout: 30_000,
 	use: {
-		baseURL: 'http://localhost:7000/helicon'
+		baseURL: 'http://localhost:7000'
 	},
 	projects: [
 		{

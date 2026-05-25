@@ -71,7 +71,7 @@ test.describe('future-show handling (slice 9)', () => {
 			}
 		});
 
-		await page.goto('/attendances');
+		await page.goto('/helicon/attendances');
 		const rows = page.getByTestId('attendance-row');
 		await expect(rows).toHaveCount(2);
 
@@ -97,7 +97,7 @@ test.describe('future-show handling (slice 9)', () => {
 			}
 		});
 
-		await page.goto('/attendances/10');
+		await page.goto('/helicon/attendances/10');
 		await expect(page.getByRole('button', { name: /Fetch setlist/i })).toBeVisible();
 		await expect(page.getByRole('button', { name: /Re-sync/i })).not.toBeVisible();
 		await expect(page.getByTestId('status-badge')).toContainText('planned');
@@ -116,7 +116,7 @@ test.describe('future-show handling (slice 9)', () => {
 			}
 		});
 
-		await page.goto('/attendances/10');
+		await page.goto('/helicon/attendances/10');
 		await expect(page.getByRole('button', { name: /Re-sync/i })).toBeVisible();
 		await expect(page.getByRole('button', { name: /Fetch setlist/i })).not.toBeVisible();
 	});
@@ -145,7 +145,7 @@ test.describe('future-show handling (slice 9)', () => {
 			});
 		});
 
-		await page.goto('/attendances/10');
+		await page.goto('/helicon/attendances/10');
 		await expect(page.getByRole('button', { name: /Fetch setlist/i })).toBeVisible();
 
 		await page.getByRole('button', { name: /Fetch setlist/i }).click();
