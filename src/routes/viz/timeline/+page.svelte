@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { base } from '$app/paths';
 	import { Chart, Svg, Axis } from 'layerchart';
 	import { scaleTime, scaleOrdinal } from 'd3';
 	import { schemeTableau10 } from 'd3';
@@ -34,7 +35,7 @@
 
 	onMount(async () => {
 		try {
-			const res = await fetch('/api/attendances');
+			const res = await fetch(`${base}/api/attendances`);
 			if (!res.ok) throw new Error(await res.text());
 			const data: Attendance[] = await res.json();
 			items = data
@@ -61,7 +62,7 @@
 	{:else if errorMsg}
 		<p style="color: #ef4444;">{errorMsg}</p>
 	{:else if items.length === 0}
-		<p style="color: var(--color-text-muted);">No shows logged yet. <a href="/attendances/new" style="color: var(--color-primary);">Log a show</a> to see it here.</p>
+		<p style="color: var(--color-text-muted);">No shows logged yet. <a href="{base}/attendances/new" style="color: var(--color-primary);">Log a show</a> to see it here.</p>
 	{:else}
 		<div
 			class="rounded-lg p-6"

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import { onMount } from 'svelte';
+	import { base } from '$app/paths';
 	import { applyTheme, loadTheme, saveTheme, THEMES, THEME_LABELS, THEME_COLORS, type Theme } from '$lib/themes';
 	import HeliconIcon from '$lib/components/HeliconIcon.svelte';
 
@@ -142,7 +143,7 @@
 		class="flex items-center justify-between border-b px-6 py-3"
 		style="position: relative; z-index: 1; border-color: var(--color-border);"
 	>
-		<a href="/" class="flex items-center gap-3 no-underline">
+		<a href="{base}/" class="flex items-center gap-3 no-underline">
 			<HeliconIcon size={36} />
 			<span class="text-xl font-bold tracking-tight" style="color: var(--color-text);">
 				Helicon
@@ -151,28 +152,28 @@
 
 		<nav class="flex items-center gap-6">
 			<a
-				href="/attendances"
+				href="{base}/attendances"
 				class="text-sm font-medium transition-colors"
 				style="color: var(--color-text-muted);"
 			>
 				Shows
 			</a>
 			<a
-				href="/viz/timeline"
+				href="{base}/viz/timeline"
 				class="text-sm font-medium transition-colors"
 				style="color: var(--color-text-muted);"
 			>
 				Timeline
 			</a>
 			<a
-				href="/viz/map"
+				href="{base}/viz/map"
 				class="text-sm font-medium transition-colors"
 				style="color: var(--color-text-muted);"
 			>
 				Map
 			</a>
 			<a
-				href="/reports"
+				href="{base}/reports"
 				class="text-sm font-medium transition-colors"
 				style="color: var(--color-text-muted);"
 			>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { base } from '$app/paths';
 
 	let { data } = $props();
 
@@ -67,7 +68,7 @@
 
 	async function load() {
 		try {
-			const res = await fetch(`/api/attendances/${data.id}`);
+			const res = await fetch(`${base}/api/attendances/${data.id}`);
 			if (!res.ok) throw new Error(await res.text());
 			attendance = await res.json();
 		} catch (e) {
@@ -81,7 +82,7 @@
 		if (!attendance) return;
 		resyncing = true;
 		try {
-			const res = await fetch(`/api/shows/${attendance.showId}/resync`, { method: 'POST' });
+			const res = await fetch(`${base}/api/shows/${attendance.showId}/resync`, { method: 'POST' });
 			if (!res.ok) throw new Error(await res.text());
 			await load();
 		} catch (e) {
@@ -95,9 +96,9 @@
 		if (!attendance) return;
 		resyncing = true;
 		try {
-			const resyncRes = await fetch(`/api/shows/${attendance.showId}/resync`, { method: 'POST' });
+			const resyncRes = await fetch(`${base}/api/shows/${attendance.showId}/resync`, { method: 'POST' });
 			if (!resyncRes.ok) throw new Error(await resyncRes.text());
-			const patchRes = await fetch(`/api/attendances/${attendance.id}`, {
+			const patchRes = await fetch(`${base}/api/attendances/${attendance.id}`, {
 				method: 'PATCH',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ status: 'confirmed' })
@@ -133,7 +134,7 @@
 
 		savingName[perfId] = true;
 		try {
-			const res = await fetch(`/api/performances/${perfId}`, {
+			const res = await fetch(`${base}/api/performances/${perfId}`, {
 				method: 'PATCH',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ artistName: name })
@@ -167,7 +168,7 @@
 	async function sendReorder() {
 		if (!attendance) return;
 		try {
-			const res = await fetch(`/api/shows/${attendance.showId}/reorder`, {
+			const res = await fetch(`${base}/api/shows/${attendance.showId}/reorder`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ performanceIds: localPerfs.map((p) => p.id) })
@@ -182,7 +183,7 @@
 		if (!confirm('Remove this act from the show?')) return;
 		deletingId = perfId;
 		try {
-			const res = await fetch(`/api/performances/${perfId}`, { method: 'DELETE' });
+			const res = await fetch(`${base}/api/performances/${perfId}`, { method: 'DELETE' });
 			if (!res.ok) throw new Error(await res.text());
 			localPerfs = localPerfs.filter((p) => p.id !== perfId);
 			delete pendingNames[perfId];
@@ -197,7 +198,7 @@
 </script>
 
 <div class="mx-auto max-w-2xl">
-	<a href="/attendances" class="mb-6 inline-block text-sm" style="color: var(--color-text-muted);">
+	<a href="{base}/attendances" class="mb-6 inline-block text-sm" style="color: var(--color-text-muted);">
 		← All shows
 	</a>
 

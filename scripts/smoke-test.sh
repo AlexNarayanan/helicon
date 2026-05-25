@@ -6,7 +6,7 @@ set -euo pipefail
 
 COMPOSE_FILE="compose.prod.yml"
 PROJECT="helicon-smoke"
-APP_URL="http://localhost:3000/api/health"
+APP_URL="http://localhost:3000/helicon/api/health"
 MAX_TRIES=30
 
 if command -v docker > /dev/null 2>&1; then
@@ -25,7 +25,6 @@ cleanup() {
 }
 trap cleanup EXIT
 
-export DOMAIN="${DOMAIN:-smoke.test}"
 export POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-smoke_pass}"
 export SETLISTFM_API_KEY="${SETLISTFM_API_KEY:-smoke_key}"
 

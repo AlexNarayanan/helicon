@@ -1,6 +1,7 @@
 <script lang="ts">
 	import 'maplibre-gl/dist/maplibre-gl.css';
 	import { onMount, onDestroy } from 'svelte';
+	import { base } from '$app/paths';
 
 	type VenueShow = {
 		showId: number;
@@ -51,7 +52,7 @@
 	onMount(async () => {
 		let venueData: VenueData[] = [];
 		try {
-			const res = await fetch('/api/viz/map');
+			const res = await fetch(`${base}/api/viz/map`);
 			if (!res.ok) throw new Error(await res.text());
 			venueData = await res.json();
 		} catch (e) {

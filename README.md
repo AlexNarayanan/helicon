@@ -98,9 +98,20 @@ pnpm test:smoke    # production image smoke test (podman)
 
 ## Production deploy
 
+The app is served under the `/helicon` path prefix so it can run alongside other apps behind a shared external Caddy reverse proxy.
+
 ```bash
-cp .env.example .env   # set DOMAIN, POSTGRES_PASSWORD, SETLISTFM_API_KEY
+cp .env.example .env   # set POSTGRES_PASSWORD, SETLISTFM_API_KEY
 podman compose -f compose.prod.yml up -d
 ```
 
-Caddy obtains a Let's Encrypt cert for `$DOMAIN` automatically. The entrypoint (`scripts/entrypoint.sh`) runs `scripts/seed.mjs` (plain-JS migrator + sentinel insert) then `node build/index.js` on every start.
+The compose stack exposes the app on port 3000. Add this to your shared Caddy config:
+
+```caddy
+yourdomain.com {
+    reverse_proxy /helicon* helicon-app:3000
+    # other apps…
+}
+```
+
+Use `reverse_proxy` (not `handle_path`) so the `/helicon` prefix is passed through to the app intact. The entrypoint (`scripts/entrypoint.sh`) runs `scripts/seed.mjs` (plain-JS migrator + sentinel insert) then `node build/index.js` on every start.

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { base } from '$app/paths';
 
 	type ReportType =
 		| 'mostPlayedSongs'
@@ -45,7 +46,7 @@
 	const isFilterable = $derived(FILTERABLE.includes(reportType));
 
 	async function fetchFilters() {
-		const res = await fetch('/api/reports/filters');
+		const res = await fetch(`${base}/api/reports/filters`);
 		if (!res.ok) return;
 		const data = await res.json();
 		availableArtists = data.artists;
@@ -63,7 +64,7 @@
 				if (yearStart) params.set('yearStart', yearStart);
 				if (yearEnd) params.set('yearEnd', yearEnd);
 			}
-			const res = await fetch(`/api/reports?${params}`);
+			const res = await fetch(`${base}/api/reports?${params}`);
 			if (!res.ok) throw new Error(await res.text());
 			results = await res.json();
 		} catch (e) {

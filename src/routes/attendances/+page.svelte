@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { base } from '$app/paths';
 
 	type ArtistEntry = { name: string; billingOrder: number };
 	type Attendance = {
@@ -30,7 +31,7 @@
 
 	onMount(async () => {
 		try {
-			const res = await fetch('/api/attendances');
+			const res = await fetch(`${base}/api/attendances`);
 			if (!res.ok) throw new Error(await res.text());
 			attendances = await res.json();
 		} catch (e) {
@@ -45,7 +46,7 @@
 	<div class="mb-8 flex items-center justify-between">
 		<h1 class="text-3xl font-bold" style="color: var(--color-text);">Shows</h1>
 		<a
-			href="/attendances/new"
+			href="{base}/attendances/new"
 			class="rounded px-4 py-2 text-sm font-semibold"
 			style="background-color: var(--color-primary); color: var(--color-surface);"
 		>
@@ -85,7 +86,7 @@
 						>
 						<td class="py-3 pr-6">
 							<a
-								href="/attendances/{att.id}"
+								href="{base}/attendances/{att.id}"
 								class="font-medium hover:underline"
 								style="color: var(--color-text);"
 							>

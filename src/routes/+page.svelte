@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { base } from '$app/paths';
 </script>
 
 <div class="max-w-2xl mx-auto text-center py-24">
@@ -7,7 +8,7 @@
 		Your live music attendance tracker — every show, every setlist, every memory.
 	</p>
 	<a
-		href="/attendances/new"
+		href="{base}/attendances/new"
 		class="inline-block px-6 py-3 rounded font-semibold text-sm transition-all"
 		style="background-color: var(--color-primary); color: var(--color-surface);"
 	>

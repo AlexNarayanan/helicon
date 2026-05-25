@@ -3,14 +3,14 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
 	webServer: {
 		command: 'pnpm dev',
-		url: 'http://localhost:7000',
+		url: 'http://localhost:7000/helicon',
 		reuseExistingServer: !process.env.CI
 	},
 	testDir: 'tests/e2e',
 	testMatch: '**/*.spec.ts',
 	timeout: 30_000,
 	use: {
-		baseURL: 'http://localhost:7000'
+		baseURL: 'http://localhost:7000/helicon'
 	},
 	projects: [
 		{

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { base } from '$app/paths';
 	import type { SetlistFmSetlist } from '$lib/server/setlistfm/types.js';
 
 	type Phase = 'idle' | 'searching' | 'results' | 'saving' | 'saved' | 'error';
@@ -23,7 +24,7 @@
 		if (venueName) params.set('venueName', venueName);
 
 		try {
-			const res = await fetch(`/api/setlistfm/search?${params}`);
+			const res = await fetch(`${base}/api/setlistfm/search?${params}`);
 			if (!res.ok) throw new Error(await res.text());
 			const data = await res.json();
 			results = data.setlists;
@@ -39,7 +40,7 @@
 		errorMsg = '';
 
 		try {
-			const res = await fetch('/api/attendances', {
+			const res = await fetch(`${base}/api/attendances`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ setlistId: setlist.id, status: 'confirmed' })
@@ -150,7 +151,7 @@
 			style="border-color: var(--color-primary); color: var(--color-text);"
 			data-testid="saved-confirmation"
 		>
-			Show saved! <a href="/attendances/{savedId}" style="color: var(--color-primary);">View attendance</a>
+			Show saved! <a href="{base}/attendances/{savedId}" style="color: var(--color-primary);">View attendance</a>
 		</div>
 	{/if}
 
