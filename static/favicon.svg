@@ -1,14 +1,49 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36">
-  <!-- nut -->
-  <line x1="32.4" y1="5.76" x2="32.4" y2="30.24" stroke="#b08ee8" stroke-width="1.8" stroke-linecap="round"/>
-  <!-- fret lines -->
-  <line x1="24.84" y1="5.76" x2="24.84" y2="30.24" stroke="#b08ee8" stroke-width="0.79" stroke-linecap="round" opacity="0.60"/>
-  <line x1="17.28" y1="5.76" x2="17.28" y2="30.24" stroke="#b08ee8" stroke-width="0.79" stroke-linecap="round" opacity="0.60"/>
-  <line x1="9.72"  y1="5.76" x2="9.72"  y2="30.24" stroke="#b08ee8" stroke-width="0.79" stroke-linecap="round" opacity="0.60"/>
-  <!-- strings: primary / secondary / accent / secondary / primary -->
-  <line x1="2.52" y1="5.76"  x2="32.4" y2="5.76"  stroke="#b08ee8" stroke-width="1.08" stroke-linecap="round"/>
-  <line x1="2.52" y1="10.8"  x2="32.4" y2="10.8"  stroke="#6ac0e0" stroke-width="1.08" stroke-linecap="round"/>
-  <line x1="2.52" y1="18"    x2="32.4" y2="18"    stroke="#f0c840" stroke-width="1.08" stroke-linecap="round"/>
-  <line x1="2.52" y1="25.2"  x2="32.4" y2="25.2"  stroke="#6ac0e0" stroke-width="1.08" stroke-linecap="round"/>
-  <line x1="2.52" y1="30.24" x2="32.4" y2="30.24" stroke="#b08ee8" stroke-width="1.08" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!--
+    Ibanez-style headstock blade, rotated 90° CCW from the header icon
+    so the tip points upward (natural guitar playing position).
+
+    4 vertices in 100×100 space (derived from the header icon geometry):
+      A (28, 95)  nut bottom-left
+      B (27, 16)  top of left/peg-side edge
+      C (46,  5)  sharp tip
+      D (74, 95)  nut bottom-right
+
+    Corners rounded with geometrically-correct quadratic beziers:
+      R = 5 for the three main corners, Rt = 3 for the tip.
+
+    Edge unit vectors:
+      AB  (-0.013, -1.000)   left/peg edge  (nearly vertical)
+      BC  ( 0.867, -0.502)   tip approach   (short steep)
+      CD  ( 0.297,  0.955)   back diagonal  (long aggressive)
+      DA  (-1.000,  0.000)   nut bottom     (horizontal)
+  -->
+  <path
+    d="M 33,95
+       Q 28,95   27.9,90
+       L 27.1,21
+       Q 27,16   31.3,13.5
+       L 43.4,6.5
+       Q 46,5    46.9,7.9
+       L 72.5,90.2
+       Q 74,95   69,95
+       Z"
+    fill="#7c6af7"
+    stroke="#5a4be8"
+    stroke-width="2"
+    stroke-linejoin="round"
+  />
+  <!-- 6 inline tuning peg buttons along the left (peg-side) edge -->
+  <circle cx="35" cy="20" r="4"   fill="#e0deff" opacity="0.92"/>
+  <circle cx="35" cy="20" r="1.7" fill="#5a4be8"/>
+  <circle cx="35" cy="32" r="4"   fill="#e0deff" opacity="0.92"/>
+  <circle cx="35" cy="32" r="1.7" fill="#5a4be8"/>
+  <circle cx="35" cy="44" r="4"   fill="#e0deff" opacity="0.92"/>
+  <circle cx="35" cy="44" r="1.7" fill="#5a4be8"/>
+  <circle cx="35" cy="56" r="4"   fill="#e0deff" opacity="0.92"/>
+  <circle cx="35" cy="56" r="1.7" fill="#5a4be8"/>
+  <circle cx="35" cy="68" r="4"   fill="#e0deff" opacity="0.92"/>
+  <circle cx="35" cy="68" r="1.7" fill="#5a4be8"/>
+  <circle cx="35" cy="80" r="4"   fill="#e0deff" opacity="0.92"/>
+  <circle cx="35" cy="80" r="1.7" fill="#5a4be8"/>
 </svg>
