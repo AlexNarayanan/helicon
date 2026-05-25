@@ -8,11 +8,16 @@
 	let { children } = $props();
 
 	let currentTheme: Theme = $state('mythos');
+	let headerEl: HTMLElement | undefined = $state(undefined);
+	let headerH = $state(0);
 
 	onMount(() => {
 		currentTheme = loadTheme();
 		applyTheme(currentTheme);
 		vh = window.innerHeight;
+		const ro = new ResizeObserver(() => { headerH = headerEl?.offsetHeight ?? 0; });
+		if (headerEl) { headerH = headerEl.offsetHeight; ro.observe(headerEl); }
+		return () => ro.disconnect();
 	});
 
 	function setTheme(theme: Theme) {
@@ -128,7 +133,7 @@
 </style>
 
 <div class="min-h-screen" style="background-color: var(--color-surface);">
-	<div style="position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0;">
+	<div style="position: fixed; top: {headerH}px; right: 0; bottom: 0; left: 0; overflow: hidden; pointer-events: none; z-index: 0;">
 		<div class="wave-scroll">
 			<svg width={TILE_W * NUM_TILES} height={vh} xmlns="http://www.w3.org/2000/svg">
 				{#each paths as d}
@@ -140,6 +145,7 @@
 	</div>
 
 	<header
+		bind:this={headerEl}
 		class="flex items-center justify-between border-b px-6 py-3"
 		style="position: relative; z-index: 1; border-color: var(--color-border);"
 	>

@@ -73,12 +73,19 @@ export async function POST({ request }) {
 
 	const client = createSetlistFmClient();
 
-	const result = await saveAttendanceFromSeed(db, client, {
-		seedSetlistId: setlistId,
-		status,
-		userId: SENTINEL_USER_ID,
-		notes
-	});
-
-	return json(result, { status: 201 });
+	try {
+		const result = await saveAttendanceFromSeed(db, client, {
+			seedSetlistId: setlistId,
+			status,
+			userId: SENTINEL_USER_ID,
+			notes
+		});
+		return json(result, { status: 201 });
+	} catch (err) {
+		const msg = err instanceof Error ? err.message : 'Failed to save attendance';
+		if (msg.includes('404')) throw error(404, 'Setlist not found on setlist.fm');
+		if (msg.includes('401')) throw error(502, 'Invalid setlist.fm API key — check SETLISTFM_API_KEY');
+		if (msg.includes('429')) throw error(429, 'setlist.fm rate limit hit — try again in a moment');
+		throw error(502, msg);
+	}
 }

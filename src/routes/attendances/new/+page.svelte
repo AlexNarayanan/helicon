@@ -25,7 +25,7 @@
 
 		try {
 			const res = await fetch(`${base}/api/setlistfm/search?${params}`);
-			if (!res.ok) throw new Error(await res.text());
+			if (!res.ok) throw new Error(await parseErrorMessage(res));
 			const data = await res.json();
 			results = data.setlists;
 			phase = 'results';
@@ -45,13 +45,23 @@
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ setlistId: setlist.id, status: 'confirmed' })
 			});
-			if (!res.ok) throw new Error(await res.text());
+			if (!res.ok) throw new Error(await parseErrorMessage(res));
 			const data = await res.json();
 			savedId = data.attendanceId;
 			phase = 'saved';
 		} catch (e) {
 			errorMsg = e instanceof Error ? e.message : 'Save failed';
 			phase = 'error';
+		}
+	}
+
+	async function parseErrorMessage(res: Response): Promise<string> {
+		const text = await res.text();
+		try {
+			const parsed = JSON.parse(text);
+			return parsed.message ?? text;
+		} catch {
+			return text;
 		}
 	}
 

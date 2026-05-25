@@ -118,8 +118,7 @@
 	<p class="mb-6 text-sm" style="color: var(--color-text-muted);">
 		Upload a pipe-delimited file of shows. Each row must have at least
 		<code>date|artist|openers|venue</code>; extra columns are ignored. Each show is matched against
-		setlist.fm and saved as a confirmed attendance. This page is not linked from anywhere &mdash;
-		access it directly.
+		setlist.fm and saved as a confirmed attendance.
 	</p>
 
 	<form
