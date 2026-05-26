@@ -165,11 +165,11 @@
 				Shows
 			</a>
 			<a
-				href="{base}/viz/timeline"
+				href="{base}/insights"
 				class="text-sm font-medium transition-colors"
 				style="color: var(--color-text-muted);"
 			>
-				Timeline
+				Insights
 			</a>
 			<a
 				href="{base}/viz/map"

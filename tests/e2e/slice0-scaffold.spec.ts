@@ -15,7 +15,7 @@ test('health endpoint returns ok', async ({ request }) => {
 test('nav links are present', async ({ page }) => {
 	await page.goto('/helicon');
 	await expect(page.getByRole('link', { name: 'Shows' })).toBeVisible();
-	await expect(page.getByRole('link', { name: 'Timeline' })).toBeVisible();
+	await expect(page.getByRole('link', { name: 'Insights' })).toBeVisible();
 	await expect(page.getByRole('link', { name: 'Map' })).toBeVisible();
 	await expect(page.getByRole('link', { name: 'Reports' })).toBeVisible();
 });

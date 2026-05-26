@@ -18,7 +18,7 @@ export default defineWorkspace([
 		test: {
 			name: 'unit',
 			include: ['tests/**/*.{test,spec}.{js,ts}'],
-			exclude: ['tests/e2e/**', 'tests/visual/**', 'tests/slice1/**', 'tests/slice2/**', 'tests/slice3/**', 'tests/slice8/**'],
+			exclude: ['tests/e2e/**', 'tests/visual/**', 'tests/slice1/**', 'tests/slice2/**', 'tests/slice3/**', 'tests/slice8/**', 'tests/slice9/**'],
 			globals: true,
 			environment: 'node'
 		}
@@ -26,7 +26,7 @@ export default defineWorkspace([
 	{
 		test: {
 			name: 'db',
-			include: ['tests/slice1/**/*.{test,spec}.{js,ts}', 'tests/slice8/**/*.{test,spec}.{js,ts}'],
+			include: ['tests/slice1/**/*.{test,spec}.{js,ts}', 'tests/slice8/**/*.{test,spec}.{js,ts}', 'tests/slice9/**/*.{test,spec}.{js,ts}'],
 			exclude: ['tests/e2e/**', 'tests/visual/**'],
 			globals: true,
 			environment: 'node',
