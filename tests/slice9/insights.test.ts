@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import * as schema from '../../src/lib/server/db/schema.js';
 import {
 	getMostSeenArtists,
-	getShowCountsByDay,
+	getShowCountsByMonth,
 	getCoPerformerPairs,
 	getCumulativeDiscoveries
 } from '../../src/lib/server/insights.js';
@@ -152,29 +152,29 @@ describe('getMostSeenArtists', () => {
 	});
 });
 
-describe('getShowCountsByDay', () => {
-	it('returns one row per unique show date', async () => {
-		const rows = await getShowCountsByDay(db);
-		expect(rows.length).toBe(3);
-		const dates = rows.map((r) => r.date);
-		expect(dates).toContain('2021-05-15');
-		expect(dates).toContain('2022-06-10');
-		expect(dates).toContain('2023-08-11');
+describe('getShowCountsByMonth', () => {
+	it('returns one row per month-of-year that has shows', async () => {
+		const rows = await getShowCountsByMonth(db);
+		const months = rows.map((r) => r.month);
+		expect(months).toContain(5);
+		expect(months).toContain(6);
+		expect(months).toContain(8);
 	});
 
-	it('each row has date in YYYY-MM-DD format and numeric count >= 1', async () => {
-		const rows = await getShowCountsByDay(db);
+	it('each row has month 1-12 and numeric count >= 1', async () => {
+		const rows = await getShowCountsByMonth(db);
 		for (const r of rows) {
-			expect(r.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+			expect(r.month).toBeGreaterThanOrEqual(1);
+			expect(r.month).toBeLessThanOrEqual(12);
 			expect(r.count).toBeTypeOf('number');
 			expect(r.count).toBeGreaterThanOrEqual(1);
 		}
 	});
 
-	it('rows are ordered by date ascending', async () => {
-		const rows = await getShowCountsByDay(db);
+	it('rows are ordered by month ascending', async () => {
+		const rows = await getShowCountsByMonth(db);
 		for (let i = 1; i < rows.length; i++) {
-			expect(rows[i].date >= rows[i - 1].date).toBe(true);
+			expect(rows[i].month).toBeGreaterThan(rows[i - 1].month);
 		}
 	});
 });

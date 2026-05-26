@@ -45,9 +45,9 @@ const mockTopVenues = [
 ];
 
 const mockCalendar = [
-	{ date: '2019-10-25', count: 1 },
-	{ date: '2022-06-18', count: 1 },
-	{ date: '2023-08-11', count: 1 }
+	{ month: 6, count: 1 },
+	{ month: 8, count: 1 },
+	{ month: 10, count: 1 }
 ];
 
 const mockCoPerformers = {
@@ -293,11 +293,12 @@ test.describe('insights page', () => {
 		await expect(page.getByTestId('top-venues-bar').first()).toBeVisible();
 	});
 
-	test('calendar heatmap renders year blocks', async ({ page }) => {
+	test('calendar heatmap renders 12 month cells', async ({ page }) => {
 		await page.goto('/helicon/insights');
 		await expect(page.getByTestId('calendar-heatmap')).toBeVisible({ timeout: 20000 });
-		const yearBlocks = page.getByTestId('calendar-year');
-		await expect(yearBlocks.first()).toBeVisible();
+		const allCells = page.locator('[data-testid="calendar-cell"], [data-testid="calendar-cell-active"]');
+		await expect(allCells).toHaveCount(12);
+		await expect(page.getByTestId('calendar-cell-active')).toHaveCount(3);
 	});
 
 	test('chord diagram renders arcs', async ({ page }) => {

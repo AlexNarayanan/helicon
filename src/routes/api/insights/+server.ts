@@ -3,7 +3,7 @@ import { db } from '$lib/server/db/index.js';
 import { getMostCommonVenues } from '$lib/server/reports.js';
 import {
 	getMostSeenArtists,
-	getShowCountsByDay,
+	getShowCountsByMonth,
 	getCoPerformerPairs,
 	getCumulativeDiscoveries
 } from '$lib/server/insights.js';
@@ -30,7 +30,7 @@ export async function GET({ url }) {
 		case 'topVenues':
 			return json(await getMostCommonVenues(db, {}));
 		case 'calendar':
-			return json(await getShowCountsByDay(db));
+			return json(await getShowCountsByMonth(db));
 		case 'coPerformers':
 			return json(await getCoPerformerPairs(db));
 		case 'cumulative':

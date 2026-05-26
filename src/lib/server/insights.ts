@@ -10,8 +10,8 @@ export interface ArtistCount {
 	showCount: number;
 }
 
-export interface DayCount {
-	date: string;
+export interface MonthCount {
+	month: number;
 	count: number;
 }
 
@@ -54,20 +54,20 @@ export async function getMostSeenArtists(db: DB): Promise<ArtistCount[]> {
 	}));
 }
 
-export async function getShowCountsByDay(db: DB): Promise<DayCount[]> {
+export async function getShowCountsByMonth(db: DB): Promise<MonthCount[]> {
 	const rows = (await db.execute(sql`
 		SELECT
-			s.show_date::date::text AS date,
+			EXTRACT(MONTH FROM s.show_date::date)::int AS month,
 			COUNT(*)::int AS count
 		FROM attendances att
 		JOIN shows s ON s.id = att.show_id
 		WHERE att.user_id = ${SENTINEL_USER_ID}
-		GROUP BY s.show_date::date
-		ORDER BY s.show_date::date
+		GROUP BY EXTRACT(MONTH FROM s.show_date::date)
+		ORDER BY month
 	`)) as Record<string, unknown>[];
 
 	return rows.map((r) => ({
-		date: String(r.date),
+		month: Number(r.month),
 		count: Number(r.count)
 	}));
 }
