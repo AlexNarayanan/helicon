@@ -116,6 +116,7 @@
 </script>
 
 <div class="rounded-lg p-6" style="background-color: var(--color-surface-alt); border: 1px solid var(--color-border);">
+	<h2 class="mb-4 text-lg font-semibold" style="color: var(--color-text);">Timeline</h2>
 	{#if loading}
 		<p style="color: var(--color-text-muted);">Loading…</p>
 	{:else if errorMsg}

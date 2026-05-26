@@ -22,13 +22,7 @@
 
 	<div class="flex flex-col gap-8">
 		<!-- Timeline -->
-		<section>
-			<h2 class="mb-3 text-xl font-semibold" style="color: var(--color-text);">Show Timeline</h2>
-			<p class="mb-3 text-sm" style="color: var(--color-text-muted);">
-				Scroll-wheel to zoom, drag to pan. Click a node to focus that artist; click empty space or click the same node again to clear.
-			</p>
-			<Timeline bind:focusedArtist onArtistFocus={handleArtistFocus} />
-		</section>
+		<Timeline bind:focusedArtist onArtistFocus={handleArtistFocus} />
 
 		<!-- Bar charts side by side -->
 		<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
