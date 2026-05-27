@@ -97,9 +97,6 @@
 
 <div class="rounded-lg p-6" style="background-color: var(--color-surface-alt); border: 1px solid var(--color-border);">
 	<h2 class="mb-4 text-lg font-semibold" style="color: var(--color-text);">Co-Performance Connections</h2>
-	<p class="mb-4 text-sm" style="color: var(--color-text-muted);">
-		Ribbons connect artists who shared a bill at an attended show. Thickness reflects number of shared shows.
-	</p>
 
 	{#if loading}
 		<p style="color: var(--color-text-muted);">Loading…</p>
