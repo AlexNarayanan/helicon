@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { base } from '$app/paths';
+	import { onMount } from 'svelte';
 	import { Chart, Svg, Axis, Spline, Area } from 'layerchart';
 	import { scaleTime, scaleLinear, curveStepAfter } from 'd3';
 
@@ -38,11 +39,46 @@
 		venues: 'unique seen',
 		songs: 'unique heard'
 	};
-	const SERIES_COLORS: Record<SeriesKey, string> = {
-		artists: 'var(--color-primary)',
-		venues: 'var(--color-secondary)',
-		songs: 'color-mix(in srgb, var(--color-primary) 50%, var(--color-secondary) 50%)'
-	};
+	// Theme colors resolved to concrete rgb() strings at runtime — SVG presentation
+	// attributes like fill/stroke don't reliably accept color-mix() values, so we
+	// blend in JS and emit a real rgb() string instead.
+	let seriesColors = $state<Record<SeriesKey, string>>({
+		artists: 'rgb(124, 92, 191)',
+		venues: 'rgb(74, 156, 197)',
+		songs: 'rgb(99, 124, 194)'
+	});
+
+	function parseColor(value: string): [number, number, number] {
+		const v = value.trim();
+		if (v.startsWith('#')) {
+			const hex = v.slice(1);
+			const expanded = hex.length === 3 ? hex.split('').map((c) => c + c).join('') : hex;
+			const n = parseInt(expanded, 16);
+			return [(n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff];
+		}
+		const m = v.match(/rgba?\(([^)]+)\)/);
+		if (m) {
+			const parts = m[1].split(',').map((s) => parseFloat(s.trim()));
+			return [parts[0], parts[1], parts[2]];
+		}
+		return [0, 0, 0];
+	}
+
+	function readThemeColors() {
+		const cs = getComputedStyle(document.documentElement);
+		const p = parseColor(cs.getPropertyValue('--color-primary'));
+		const s = parseColor(cs.getPropertyValue('--color-secondary'));
+		const mix: [number, number, number] = [
+			Math.round((p[0] + s[0]) / 2),
+			Math.round((p[1] + s[1]) / 2),
+			Math.round((p[2] + s[2]) / 2)
+		];
+		seriesColors = {
+			artists: `rgb(${p[0]}, ${p[1]}, ${p[2]})`,
+			venues: `rgb(${s[0]}, ${s[1]}, ${s[2]})`,
+			songs: `rgb(${mix[0]}, ${mix[1]}, ${mix[2]})`
+		};
+	}
 
 	const finalTotals = $derived.by<Record<SeriesKey, number>>(() => {
 		const totals: Record<SeriesKey, number> = { artists: 0, venues: 0, songs: 0 };
@@ -130,14 +166,24 @@
 		}
 	}
 
-	$effect(() => {
+	onMount(() => {
+		readThemeColors();
+		const observer = new MutationObserver(readThemeColors);
+		observer.observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ['data-theme']
+		});
 		load();
+		return () => observer.disconnect();
 	});
 
-	const PADDING = { top: 16, right: 56, bottom: 40, left: 48 };
+	const PADDING = { top: 16, right: 24, bottom: 40, left: 48 };
 </script>
 
-<div class="rounded-lg p-6" style="background-color: var(--color-surface-alt); border: 1px solid var(--color-border);">
+<div
+	class="flex h-full flex-col rounded-lg p-6"
+	style="background-color: var(--color-surface-alt); border: 1px solid var(--color-border);"
+>
 	<h2 class="mb-4 text-lg font-semibold" style="color: var(--color-text);">Cumulative Discoveries</h2>
 
 	{#if loading}
@@ -154,14 +200,14 @@
 					class="rounded p-3"
 					style="
 						background-color: var(--color-surface);
-						border-left: 3px solid {SERIES_COLORS[key]};
+						border-left: 3px solid {seriesColors[key]};
 					"
 					data-testid="cumulative-stat"
 					data-series={key}
 				>
 					<div
 						class="text-xs font-semibold uppercase tracking-wide"
-						style="color: {SERIES_COLORS[key]};"
+						style="color: {seriesColors[key]};"
 					>
 						{SERIES_LABELS[key]}
 					</div>
@@ -180,12 +226,14 @@
 		</div>
 
 		<!-- Chart -->
-		<div style="height: 260px;" data-testid="cumulative-chart">
+		<div class="min-h-0 flex-1" style="min-height: 260px;" data-testid="cumulative-chart">
 			<Chart
 				data={unified}
 				x={(d: UnifiedPoint) => d.date}
+				y={(d: UnifiedPoint) => Math.max(d.artistsPct, d.venuesPct, d.songsPct)}
 				xScale={scaleTime()}
-				yScale={scaleLinear().domain([0, 100])}
+				yScale={scaleLinear()}
+				yDomain={[0, 100]}
 				padding={PADDING}
 				let:xScale
 				let:yScale
@@ -211,7 +259,7 @@
 							x={(d: UnifiedPoint) => d.date}
 							y1={(d: UnifiedPoint) => d.artistsPct}
 							curve={curveStepAfter}
-							fill={SERIES_COLORS.artists}
+							fill={seriesColors.artists}
 							fillOpacity={0.12}
 						/>
 						<Area
@@ -219,7 +267,7 @@
 							x={(d: UnifiedPoint) => d.date}
 							y1={(d: UnifiedPoint) => d.venuesPct}
 							curve={curveStepAfter}
-							fill={SERIES_COLORS.venues}
+							fill={seriesColors.venues}
 							fillOpacity={0.12}
 						/>
 						<Area
@@ -227,7 +275,7 @@
 							x={(d: UnifiedPoint) => d.date}
 							y1={(d: UnifiedPoint) => d.songsPct}
 							curve={curveStepAfter}
-							fill={SERIES_COLORS.songs}
+							fill={seriesColors.songs}
 							fillOpacity={0.12}
 						/>
 
@@ -237,52 +285,28 @@
 							x={(d: UnifiedPoint) => d.date}
 							y={(d: UnifiedPoint) => d.artistsPct}
 							curve={curveStepAfter}
-							stroke={SERIES_COLORS.artists}
+							stroke={seriesColors.artists}
 							strokeWidth={2}
+							fill="none"
 						/>
 						<Spline
 							data={unified}
 							x={(d: UnifiedPoint) => d.date}
 							y={(d: UnifiedPoint) => d.venuesPct}
 							curve={curveStepAfter}
-							stroke={SERIES_COLORS.venues}
+							stroke={seriesColors.venues}
 							strokeWidth={2}
+							fill="none"
 						/>
 						<Spline
 							data={unified}
 							x={(d: UnifiedPoint) => d.date}
 							y={(d: UnifiedPoint) => d.songsPct}
 							curve={curveStepAfter}
-							stroke={SERIES_COLORS.songs}
+							stroke={seriesColors.songs}
 							strokeWidth={2}
+							fill="none"
 						/>
-
-						<!-- End-of-line labels -->
-						{@const lastPt = unified[unified.length - 1]}
-						<text
-							x={xScale(lastPt.date) + 6}
-							y={yScale(lastPt.artistsPct)}
-							dominant-baseline="middle"
-							font-size="11"
-							font-weight="600"
-							style="fill: {SERIES_COLORS.artists};"
-						>artists</text>
-						<text
-							x={xScale(lastPt.date) + 6}
-							y={yScale(lastPt.venuesPct)}
-							dominant-baseline="middle"
-							font-size="11"
-							font-weight="600"
-							style="fill: {SERIES_COLORS.venues};"
-						>venues</text>
-						<text
-							x={xScale(lastPt.date) + 6}
-							y={yScale(lastPt.songsPct)}
-							dominant-baseline="middle"
-							font-size="11"
-							font-weight="600"
-							style="fill: {SERIES_COLORS.songs};"
-						>songs</text>
 
 						<!-- Hover guide + dots -->
 						{#if hoveredIdx !== null && unified[hoveredIdx]}
@@ -299,9 +323,9 @@
 								opacity={0.6}
 								pointer-events="none"
 							/>
-							<circle cx={hx} cy={yScale(hp.artistsPct)} r={4} fill={SERIES_COLORS.artists} pointer-events="none" />
-							<circle cx={hx} cy={yScale(hp.venuesPct)} r={4} fill={SERIES_COLORS.venues} pointer-events="none" />
-							<circle cx={hx} cy={yScale(hp.songsPct)} r={4} fill={SERIES_COLORS.songs} pointer-events="none" />
+							<circle cx={hx} cy={yScale(hp.artistsPct)} r={4} fill={seriesColors.artists} pointer-events="none" />
+							<circle cx={hx} cy={yScale(hp.venuesPct)} r={4} fill={seriesColors.venues} pointer-events="none" />
+							<circle cx={hx} cy={yScale(hp.songsPct)} r={4} fill={seriesColors.songs} pointer-events="none" />
 						{/if}
 
 						<!-- Hover capture overlay -->
