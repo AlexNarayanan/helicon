@@ -308,14 +308,21 @@ test.describe('insights page', () => {
 		await expect(arcs.first()).toBeVisible();
 	});
 
-	test('cumulative chart renders and series toggle works', async ({ page }) => {
+	test('cumulative chart shows stats for all three dimensions', async ({ page }) => {
 		await page.goto('/helicon/insights');
 		await expect(page.getByTestId('cumulative-chart')).toBeVisible({ timeout: 20000 });
-		// Toggle to venues series
-		await page.getByTestId('cumulative-series-toggle').filter({ hasText: 'Venues' }).click();
-		const venuesBtn = page.locator('[data-testid="cumulative-series-toggle"][data-series="venues"]');
-		// After clicking, Venues button should have different styling (active)
-		// We can't easily check CSS vars, but we confirm the button exists and was clicked
-		await expect(venuesBtn).toBeVisible();
+
+		const stats = page.getByTestId('cumulative-stat');
+		await expect(stats).toHaveCount(3);
+
+		const artistsStat = page.locator('[data-testid="cumulative-stat"][data-series="artists"]');
+		const venuesStat = page.locator('[data-testid="cumulative-stat"][data-series="venues"]');
+		const songsStat = page.locator('[data-testid="cumulative-stat"][data-series="songs"]');
+
+		// Each stat block exposes a numeric value matching the final cumulative count
+		// from the mocked data: artists=4, venues=3, songs=18.
+		await expect(artistsStat.getByTestId('cumulative-stat-value')).toHaveText('4');
+		await expect(venuesStat.getByTestId('cumulative-stat-value')).toHaveText('3');
+		await expect(songsStat.getByTestId('cumulative-stat-value')).toHaveText('18');
 	});
 });
