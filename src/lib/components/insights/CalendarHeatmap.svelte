@@ -4,6 +4,8 @@
 
 	type MonthCount = { month: number; count: number };
 
+	let { onMonthClick = undefined as ((month: number) => void) | undefined } = $props();
+
 	let items = $state<MonthCount[]>([]);
 	let loading = $state(true);
 	let errorMsg = $state('');
@@ -135,6 +137,7 @@
 		>
 			{#each months as m (m.month)}
 				{@const textColor = cellTextColor(m.count)}
+				<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 				<div
 					class="flex flex-col items-center justify-center rounded"
 					style="
@@ -143,9 +146,19 @@
 						background-color: {cellColor(m.count)};
 						cursor: {m.count > 0 ? 'pointer' : 'default'};
 					"
-					role="presentation"
+					role={m.count > 0 ? 'button' : 'presentation'}
+					tabindex={m.count > 0 ? 0 : -1}
 					data-testid={m.count > 0 ? 'calendar-cell-active' : 'calendar-cell'}
 					data-month={m.month}
+					onclick={() => {
+						if (m.count > 0) onMonthClick?.(m.month);
+					}}
+					onkeydown={(e) => {
+						if (m.count > 0 && (e.key === 'Enter' || e.key === ' ')) {
+							e.preventDefault();
+							onMonthClick?.(m.month);
+						}
+					}}
 					onmouseenter={(e) => {
 						hoveredMonth = { label: m.label, count: m.count };
 						tooltipX = e.clientX;

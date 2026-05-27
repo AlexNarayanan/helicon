@@ -8,6 +8,9 @@
 	let items = $state<ArtistCount[]>([]);
 	let loading = $state(true);
 	let errorMsg = $state('');
+	let hoveredLabel = $state<string | null>(null);
+	let tooltipX = $state(0);
+	let tooltipY = $state(0);
 
 	const maxCount = $derived(items.length > 0 ? items[0].showCount : 1);
 
@@ -20,6 +23,24 @@
 			errorMsg = e instanceof Error ? e.message : 'Failed to load';
 		} finally {
 			loading = false;
+		}
+	}
+
+	function showTooltipIfTruncated(e: MouseEvent, label: string) {
+		const el = e.currentTarget as HTMLElement | null;
+		if (el && el.scrollWidth > el.clientWidth) {
+			hoveredLabel = label;
+			tooltipX = e.clientX;
+			tooltipY = e.clientY;
+		} else {
+			hoveredLabel = null;
+		}
+	}
+
+	function moveTooltip(e: MouseEvent) {
+		if (hoveredLabel !== null) {
+			tooltipX = e.clientX;
+			tooltipY = e.clientY;
 		}
 	}
 
@@ -47,8 +68,13 @@
 					data-testid="top-artists-bar"
 					data-artist={item.artistName}
 				>
-					<span class="w-36 shrink-0 truncate text-sm" style="color: var(--color-text);"
-						>{item.artistName}</span
+					<!-- svelte-ignore a11y_no_static_element_interactions -->
+					<span
+						class="w-36 shrink-0 truncate text-sm"
+						style="color: var(--color-text);"
+						onmouseenter={(e) => showTooltipIfTruncated(e, item.artistName)}
+						onmousemove={moveTooltip}
+						onmouseleave={() => (hoveredLabel = null)}>{item.artistName}</span
 					>
 					<div class="relative flex-1" style="height: 20px;">
 						<div
@@ -64,3 +90,13 @@
 		</div>
 	{/if}
 </div>
+
+{#if hoveredLabel}
+	<div
+		data-testid="top-artists-tooltip"
+		class="pointer-events-none fixed z-50 rounded px-3 py-2 text-sm shadow-lg"
+		style="left: {tooltipX + 16}px; top: {tooltipY - 40}px; background-color: var(--color-surface-alt); color: var(--color-text); border: 1px solid var(--color-border);"
+	>
+		{hoveredLabel}
+	</div>
+{/if}

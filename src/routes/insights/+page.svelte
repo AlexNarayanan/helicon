@@ -5,15 +5,29 @@
 	import CalendarHeatmap from '$lib/components/insights/CalendarHeatmap.svelte';
 	import CoPerformersChord from '$lib/components/insights/CoPerformersChord.svelte';
 	import CumulativeDiscoveries from '$lib/components/insights/CumulativeDiscoveries.svelte';
+	import type { Focus } from '$lib/components/insights/focus';
+	import { focusEquals } from '$lib/components/insights/focus';
 
-	let focusedArtist = $state<string | null>(null);
+	let focus = $state<Focus | null>(null);
 
-	function handleArtistFocus(artist: string | null) {
-		focusedArtist = artist;
+	function toggleFocus(candidate: Focus) {
+		focus = focusEquals(focus, candidate) ? null : candidate;
 	}
 
-	function handleBarClick(artistName: string) {
-		focusedArtist = focusedArtist === artistName ? null : artistName;
+	function handleFocusChange(next: Focus | null) {
+		focus = next;
+	}
+
+	function handleArtistClick(artistName: string) {
+		toggleFocus({ kind: 'artists', names: [artistName] });
+	}
+
+	function handleVenueClick(venueId: number) {
+		toggleFocus({ kind: 'venue', venueId });
+	}
+
+	function handleMonthClick(month: number) {
+		toggleFocus({ kind: 'month', month });
 	}
 </script>
 
@@ -22,16 +36,16 @@
 
 	<div class="flex flex-col gap-8">
 		<!-- Timeline -->
-		<Timeline bind:focusedArtist onArtistFocus={handleArtistFocus} />
+		<Timeline bind:focus onFocusChange={handleFocusChange} />
 
 		<!-- Bar charts side by side -->
 		<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-			<TopArtistsBar onArtistClick={handleBarClick} />
-			<TopVenuesBar />
+			<TopArtistsBar onArtistClick={handleArtistClick} />
+			<TopVenuesBar onVenueClick={handleVenueClick} />
 		</div>
 
 		<!-- Calendar heatmap -->
-		<CalendarHeatmap />
+		<CalendarHeatmap onMonthClick={handleMonthClick} />
 
 		<!-- Chord and Cumulative side by side -->
 		<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">

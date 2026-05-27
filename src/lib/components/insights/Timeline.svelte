@@ -6,12 +6,15 @@
 	import { schemeTableau10 } from 'd3';
 	import type { ZoomBehavior, ZoomTransform, ZoomScale } from 'd3';
 	import type { ScaleTime } from 'd3';
+	import type { Focus } from './focus';
+	import { focusEquals } from './focus';
 
 	type Artist = { name: string; billingOrder: number };
 	type Attendance = {
 		id: number;
 		showDate: string;
 		status: string;
+		venueId: number;
 		venueName: string;
 		venueCity: string;
 		venueCountry: string;
@@ -21,9 +24,14 @@
 		date: Date;
 		headliner: string;
 		supportCount: number;
+		artistNameSet: Set<string>;
+		monthOfYear: number;
 	};
 
-	let { focusedArtist = $bindable<string | null>(null), onArtistFocus = undefined as ((artist: string | null) => void) | undefined } = $props();
+	let {
+		focus = $bindable<Focus | null>(null),
+		onFocusChange = undefined as ((focus: Focus | null) => void) | undefined
+	} = $props();
 
 	let items = $state<TimelineItem[]>([]);
 	let loading = $state(true);
@@ -40,29 +48,44 @@
 		scaleOrdinal<string, string>(schemeTableau10 as string[]).domain(headliners)
 	);
 
+	function itemMatches(item: TimelineItem, f: Focus): boolean {
+		if (f.kind === 'artists') {
+			for (const n of f.names) if (item.artistNameSet.has(n)) return true;
+			return false;
+		}
+		if (f.kind === 'venue') return item.venueId === f.venueId;
+		if (f.kind === 'month') return item.monthOfYear === f.month;
+		return false;
+	}
+
 	function circleOpacity(item: TimelineItem): number {
-		if (focusedArtist === null) {
+		if (focus === null) {
 			return hoveredItem && hoveredItem.id !== item.id ? 0.35 : 1;
 		}
-		if (item.headliner === focusedArtist) return 1;
-		return 0.15;
+		return itemMatches(item, focus) ? 1 : 0.15;
 	}
 
 	function circleStrokeWidth(item: TimelineItem): number {
-		return focusedArtist !== null && item.headliner === focusedArtist ? 3 : 2;
+		return focus !== null && itemMatches(item, focus) ? 3 : 2;
 	}
 
-	function handleMarkClick(item: TimelineItem) {
-		const next = focusedArtist === item.headliner ? null : item.headliner;
-		focusedArtist = next;
-		onArtistFocus?.(next);
-		// Clear hover state so that clearing focus doesn't leave other marks dimmed by hover
+	function setFocus(next: Focus | null) {
+		focus = next;
+		onFocusChange?.(next);
 		if (next === null) hoveredItem = null;
 	}
 
+	function handleMarkClick(item: TimelineItem) {
+		const candidate: Focus = {
+			kind: 'artists',
+			names: item.artists.map((a) => a.name),
+			originShowId: item.id
+		};
+		setFocus(focusEquals(focus, candidate) ? null : candidate);
+	}
+
 	function handleBackgroundClick() {
-		focusedArtist = null;
-		onArtistFocus?.(null);
+		setFocus(null);
 	}
 
 	let overlayEl = $state<SVGRectElement | null>(null);
@@ -83,12 +106,17 @@
 			if (!res.ok) throw new Error(await res.text());
 			const data: Attendance[] = await res.json();
 			items = data
-				.map((d) => ({
-					...d,
-					date: new Date(d.showDate),
-					headliner: d.artists[0]?.name ?? 'Unknown',
-					supportCount: Math.max(0, d.artists.length - 1)
-				}))
+				.map((d) => {
+					const date = new Date(d.showDate);
+					return {
+						...d,
+						date,
+						headliner: d.artists[0]?.name ?? 'Unknown',
+						supportCount: Math.max(0, d.artists.length - 1),
+						artistNameSet: new Set(d.artists.map((a) => a.name)),
+						monthOfYear: date.getUTCMonth() + 1
+					};
+				})
 				.sort((a, b) => a.date.getTime() - b.date.getTime());
 		} catch (e) {
 			errorMsg = e instanceof Error ? e.message : 'Failed to load';

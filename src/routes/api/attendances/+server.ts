@@ -20,6 +20,7 @@ export async function GET() {
 			showId: shows.id,
 			showDate: shows.showDate,
 			status: attendances.attendanceStatus,
+			venueId: venues.id,
 			venueName: venues.name,
 			venueCity: venues.city,
 			venueCountry: venues.country
@@ -56,6 +57,7 @@ export async function GET() {
 			id: r.id,
 			showDate: r.showDate,
 			status: r.status,
+			venueId: r.venueId,
 			venueName: r.venueName,
 			venueCity: r.venueCity,
 			venueCountry: r.venueCountry,

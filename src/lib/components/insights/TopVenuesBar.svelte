@@ -9,9 +9,14 @@
 		showCount: number;
 	};
 
+	let { onVenueClick = undefined as ((venueId: number) => void) | undefined } = $props();
+
 	let items = $state<VenueCount[]>([]);
 	let loading = $state(true);
 	let errorMsg = $state('');
+	let hoveredLabel = $state<string | null>(null);
+	let tooltipX = $state(0);
+	let tooltipY = $state(0);
 
 	const maxCount = $derived(items.length > 0 ? items[0].showCount : 1);
 
@@ -24,6 +29,24 @@
 			errorMsg = e instanceof Error ? e.message : 'Failed to load';
 		} finally {
 			loading = false;
+		}
+	}
+
+	function showTooltipIfTruncated(e: MouseEvent, label: string) {
+		const el = e.currentTarget as HTMLElement | null;
+		if (el && el.scrollWidth > el.clientWidth) {
+			hoveredLabel = label;
+			tooltipX = e.clientX;
+			tooltipY = e.clientY;
+		} else {
+			hoveredLabel = null;
+		}
+	}
+
+	function moveTooltip(e: MouseEvent) {
+		if (hoveredLabel !== null) {
+			tooltipX = e.clientX;
+			tooltipY = e.clientY;
 		}
 	}
 
@@ -45,9 +68,20 @@
 		<div class="flex flex-col gap-2" data-testid="top-venues-bars">
 			{#each items as item (item.venueId)}
 				{@const pct = (item.showCount / maxCount) * 100}
-				<div class="flex items-center gap-3" data-testid="top-venues-bar">
-					<span class="w-48 shrink-0 truncate text-sm" style="color: var(--color-text);"
-						>{item.venueName} — {item.venueCity}</span
+				{@const label = `${item.venueName} — ${item.venueCity}`}
+				<button
+					class="flex items-center gap-3 text-left"
+					onclick={() => onVenueClick?.(item.venueId)}
+					data-testid="top-venues-bar"
+					data-venue-id={item.venueId}
+				>
+					<!-- svelte-ignore a11y_no_static_element_interactions -->
+					<span
+						class="w-48 shrink-0 truncate text-sm"
+						style="color: var(--color-text);"
+						onmouseenter={(e) => showTooltipIfTruncated(e, label)}
+						onmousemove={moveTooltip}
+						onmouseleave={() => (hoveredLabel = null)}>{label}</span
 					>
 					<div class="relative flex-1" style="height: 20px;">
 						<div
@@ -58,8 +92,18 @@
 					<span class="w-8 shrink-0 text-right text-sm font-medium" style="color: var(--color-text);"
 						>{item.showCount}</span
 					>
-				</div>
+				</button>
 			{/each}
 		</div>
 	{/if}
 </div>
+
+{#if hoveredLabel}
+	<div
+		data-testid="top-venues-tooltip"
+		class="pointer-events-none fixed z-50 rounded px-3 py-2 text-sm shadow-lg"
+		style="left: {tooltipX + 16}px; top: {tooltipY - 40}px; background-color: var(--color-surface-alt); color: var(--color-text); border: 1px solid var(--color-border);"
+	>
+		{hoveredLabel}
+	</div>
+{/if}

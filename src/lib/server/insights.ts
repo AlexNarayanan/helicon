@@ -1,6 +1,5 @@
-import { sql, eq, and, desc } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import type { DB } from './db/index.js';
-import { attendances, artists, performances, shows, venues, songs, setlistSongs } from './db/schema.js';
 
 const SENTINEL_USER_ID = 1;
 
