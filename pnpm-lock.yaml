@@ -23,6 +23,9 @@ importers:
       postgres:
         specifier: ^3.4.4
         version: 3.4.9
+      svelte-multiselect:
+        specifier: ^11.7.1
+        version: 11.7.1(acorn@8.16.0)(svelte@5.55.9(@typescript-eslint/types@8.59.4))
     devDependencies:
       '@eslint/js':
         specifier: ^9.0.0
@@ -3113,6 +3116,18 @@ packages:
       svelte:
         optional: true
 
+  svelte-multiselect@11.7.1:
+    resolution: {integrity: sha512-nb7ba1V+Qux97dHw2SosB80DOnyXBUKJasN1zrZFGhBqDfee0Yp6Lulub7GG/7lXbF1W4vIw686FpRO4Y/Uokg==}
+    peerDependencies:
+      '@wooorm/starry-night': ^3.0.0
+      acorn: ^8.0.0
+      svelte: ^5.48.0
+    peerDependenciesMeta:
+      '@wooorm/starry-night':
+        optional: true
+      acorn:
+        optional: true
+
   svelte@5.55.9:
     resolution: {integrity: sha512-fTjjT8cHLDwigcu2j3pv7Jq04LklXevPB8uBgyHNiTXv+RMNvVnrjS4UEYrLMkhuq1vpCodHjiW+z/95SDs/fg==}
     engines: {node: '>=18'}
@@ -6147,6 +6162,12 @@ snapshots:
       postcss-scss: 4.0.9(postcss@8.5.15)
     optionalDependencies:
       svelte: 5.55.9(@typescript-eslint/types@8.59.4)
+
+  svelte-multiselect@11.7.1(acorn@8.16.0)(svelte@5.55.9(@typescript-eslint/types@8.59.4)):
+    dependencies:
+      svelte: 5.55.9(@typescript-eslint/types@8.59.4)
+    optionalDependencies:
+      acorn: 8.16.0
 
   svelte@5.55.9(@typescript-eslint/types@8.59.4):
     dependencies:

@@ -55,7 +55,8 @@
     "drizzle-orm": "^0.45.2",
     "layerchart": "^1.0.13",
     "maplibre-gl": "^4.5.0",
-    "postgres": "^3.4.4"
+    "postgres": "^3.4.4",
+    "svelte-multiselect": "^11.7.1"
   },
   "type": "module"
 }

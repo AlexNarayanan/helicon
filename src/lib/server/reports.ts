@@ -1,4 +1,4 @@
-import { sql, eq, desc, asc, and, count } from 'drizzle-orm';
+import { sql, eq, desc, asc, and, count, inArray } from 'drizzle-orm';
 import type { SQL } from 'drizzle-orm';
 import type { DB } from './db/index.js';
 import { attendances, artists, performances, setlistSongs, shows, songs, venues } from './db/schema.js';
@@ -6,8 +6,8 @@ import { attendances, artists, performances, setlistSongs, shows, songs, venues 
 const SENTINEL_USER_ID = 1;
 
 export interface ReportFilters {
-	artistId?: number;
-	venueId?: number;
+	artistIds?: number[];
+	venueIds?: number[];
 	yearStart?: number;
 	yearEnd?: number;
 }
@@ -40,8 +40,8 @@ export interface OpenerDistribution {
 function songFilters(filters: ReportFilters): (SQL | undefined)[] {
 	return [
 		eq(attendances.userId, SENTINEL_USER_ID),
-		filters.artistId !== undefined ? eq(performances.artistId, filters.artistId) : undefined,
-		filters.venueId !== undefined ? eq(shows.venueId, filters.venueId) : undefined,
+		filters.artistIds?.length ? inArray(performances.artistId, filters.artistIds) : undefined,
+		filters.venueIds?.length ? inArray(shows.venueId, filters.venueIds) : undefined,
 		filters.yearStart !== undefined
 			? sql`EXTRACT(YEAR FROM ${shows.showDate}::date)::int >= ${filters.yearStart}`
 			: undefined,
@@ -94,7 +94,7 @@ export async function getMostCommonVenues(
 ): Promise<VenueCount[]> {
 	const conditions: (SQL | undefined)[] = [
 		eq(attendances.userId, SENTINEL_USER_ID),
-		filters.artistId !== undefined ? eq(performances.artistId, filters.artistId) : undefined,
+		filters.artistIds?.length ? inArray(performances.artistId, filters.artistIds) : undefined,
 		filters.yearStart !== undefined
 			? sql`EXTRACT(YEAR FROM ${shows.showDate}::date)::int >= ${filters.yearStart}`
 			: undefined,

@@ -200,7 +200,7 @@ describe('getMostPlayedSongs', () => {
 	});
 
 	it('filters by artistId', async () => {
-		const rows = await getMostPlayedSongs(db, { artistId: metallicaId });
+		const rows = await getMostPlayedSongs(db, { artistIds: [metallicaId] });
 		// Only Metallica performances: Master of Puppets (2), Enter Sandman (1)
 		expect(rows).toHaveLength(2);
 		expect(rows[0].songName).toBe('Master of Puppets');
@@ -220,7 +220,7 @@ describe('getMostPlayedSongs', () => {
 	});
 
 	it('filters by venueId', async () => {
-		const rows = await getMostPlayedSongs(db, { venueId: forumId });
+		const rows = await getMostPlayedSongs(db, { venueIds: [forumId] });
 		// Only show3 at Forum: Walk (1)
 		expect(rows).toHaveLength(1);
 		expect(rows[0].songName).toBe('Walk');
@@ -258,7 +258,7 @@ describe('getMostCommonVenues', () => {
 
 	it('filters by artistId — only venues where artist performed', async () => {
 		// Metallica only at MSG, not Forum
-		const rows = await getMostCommonVenues(db, { artistId: metallicaId });
+		const rows = await getMostCommonVenues(db, { artistIds: [metallicaId] });
 		expect(rows).toHaveLength(1);
 		expect(rows[0].venueName).toBe('Madison Square Garden');
 		expect(rows[0].showCount).toBe(2);

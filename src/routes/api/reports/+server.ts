@@ -20,13 +20,19 @@ const REPORT_TYPES = [
 type ReportType = (typeof REPORT_TYPES)[number];
 
 function parseFilters(url: URL): ReportFilters {
-	const artistId = url.searchParams.get('artistId');
-	const venueId = url.searchParams.get('venueId');
+	const artistIds = url.searchParams
+		.getAll('artistId')
+		.map((v) => parseInt(v, 10))
+		.filter((v) => !isNaN(v));
+	const venueIds = url.searchParams
+		.getAll('venueId')
+		.map((v) => parseInt(v, 10))
+		.filter((v) => !isNaN(v));
 	const yearStart = url.searchParams.get('yearStart');
 	const yearEnd = url.searchParams.get('yearEnd');
 	return {
-		artistId: artistId ? parseInt(artistId, 10) : undefined,
-		venueId: venueId ? parseInt(venueId, 10) : undefined,
+		artistIds: artistIds.length ? artistIds : undefined,
+		venueIds: venueIds.length ? venueIds : undefined,
 		yearStart: yearStart ? parseInt(yearStart, 10) : undefined,
 		yearEnd: yearEnd ? parseInt(yearEnd, 10) : undefined
 	};
