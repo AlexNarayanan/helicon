@@ -82,10 +82,17 @@ export async function searchSetlists(
 		if (dateOnly.length > 0) return dateOnly;
 
 		// Phase 3: whole year, artist only — catches API quirks where the exact date
-		// param returns nothing; sort by proximity so the closest show floats to the top
+		// param returns nothing; paginate up to 5 pages and sort by proximity so the
+		// closest show floats to the top (active touring artists can have 50+ shows/year)
 		const year = +params.date!.split('-')[0];
-		const yearResults = await trySearch({ artistMbid: mbid, year });
-		return yearResults.sort((a, b) => {
+		const allYearResults: SetlistFmSetlist[] = [];
+		for (let page = 1; page <= 5; page++) {
+			const pageResults = await trySearch({ artistMbid: mbid, year, page });
+			if (pageResults.length === 0) break;
+			allYearResults.push(...pageResults);
+			if (pageResults.some((s) => s.eventDate === setlistDate)) break;
+		}
+		return allYearResults.sort((a, b) => {
 			const [ad, am, ay] = a.eventDate.split('-').map(Number);
 			const [bd, bm, by] = b.eventDate.split('-').map(Number);
 			const distA = Math.abs(Date.UTC(ay, am - 1, ad) - targetDateMs!);
@@ -271,13 +278,24 @@ export async function persistShowFromSetlists(
 ): Promise<{ showId: number; performanceCount: number }> {
 	if (allSetlists.length === 0) throw new Error('persistShowFromSetlists: no setlists provided');
 
-	const venueData = allSetlists[0].venue;
-	const showDate = parseSetlistDate(allSetlists[0].eventDate);
+	// When setlist.fm has multiple setlists for the same artist at the same show
+	// (e.g. a stub with 3 songs and a complete one with 21), keep the most complete one.
+	const songCount = (s: SetlistFmSetlist) =>
+		s.sets.set.reduce((n, set) => n + set.song.length, 0);
+	const bestByMbid = new Map<string, SetlistFmSetlist>();
+	for (const s of allSetlists) {
+		const existing = bestByMbid.get(s.artist.mbid);
+		if (!existing || songCount(s) > songCount(existing)) bestByMbid.set(s.artist.mbid, s);
+	}
+	const deduped = [...bestByMbid.values()];
+
+	const venueData = deduped[0].venue;
+	const showDate = parseSetlistDate(deduped[0].eventDate);
 
 	const venueId = await upsertVenue(db, venueData);
 	const showId = await upsertShow(db, venueId, showDate);
 
-	const ordered = assignBillingOrder(allSetlists);
+	const ordered = assignBillingOrder(deduped);
 
 	for (let i = 0; i < ordered.length; i++) {
 		const setlist = ordered[i];

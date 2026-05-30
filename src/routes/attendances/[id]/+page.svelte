@@ -319,11 +319,13 @@
 					{/if}
 				</div>
 
+				<div class="flex flex-col gap-4">
 				{#each (editing ? localPerfs : attendance.performances) as perf, i (perf.id)}
 					<section
 						data-testid="performance"
 						data-billing-order={perf.billingOrder}
-						class="mb-10"
+						class="rounded-lg p-4"
+						style="background-color: var(--color-surface-alt);"
 					>
 						{#if editing}
 							<div class="mb-3 flex items-center gap-2">
@@ -352,7 +354,7 @@
 									onkeydown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
 									disabled={savingName[perf.id]}
 									class="min-w-0 flex-1 rounded px-2 py-1 text-xl font-bold"
-									style="background-color: var(--color-surface-alt); color: var(--color-text); border: 1px solid var(--color-border); outline-color: var(--color-primary);"
+									style="background-color: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border); outline-color: var(--color-primary);"
 								/>
 
 								{#if localPerfs.length > 1}
@@ -395,8 +397,9 @@
 						{/if}
 
 						{#if perf.sets.length > 0}
+							<div class="flex flex-col gap-3">
 							{#each perf.sets as set (set.setNumber)}
-								<div class="mb-4">
+								<div>
 									<h3
 										class="mb-2 text-xs font-semibold uppercase tracking-wide"
 										style="color: var(--color-text-muted);"
@@ -426,6 +429,7 @@
 									</ol>
 								</div>
 							{/each}
+							</div>
 						{:else}
 							<p class="text-sm" style="color: var(--color-text-muted);">No setlist recorded.</p>
 						{/if}
@@ -443,6 +447,7 @@
 						{/if}
 					</section>
 				{/each}
+				</div>
 			{/if}
 		</div>
 	{/if}

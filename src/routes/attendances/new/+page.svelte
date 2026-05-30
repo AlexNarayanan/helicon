@@ -13,6 +13,8 @@
 	let savedId = $state<number | null>(null);
 	let errorMsg = $state('');
 
+	let urlInput = $state('');
+
 	async function search() {
 		phase = 'searching';
 		results = [];
@@ -72,6 +74,37 @@
 
 	function songCount(setlist: SetlistFmSetlist): number {
 		return setlist.sets.set.reduce((acc, s) => acc + s.song.length, 0);
+	}
+
+	function parseSetlistId(url: string): string | null {
+		// setlist.fm URLs end with <venue-slug>-<8hexchars>.html
+		const match = url.trim().match(/([0-9a-f]{8})(?:\.html)?$/i);
+		return match ? match[1].toLowerCase() : null;
+	}
+
+	async function saveByUrl() {
+		const setlistId = parseSetlistId(urlInput);
+		if (!setlistId) {
+			errorMsg = 'Paste a setlist.fm show URL (e.g. https://www.setlist.fm/setlist/…)';
+			phase = 'error';
+			return;
+		}
+		phase = 'saving';
+		errorMsg = '';
+		try {
+			const res = await fetch(`${base}/api/attendances`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ setlistId, status: 'confirmed' })
+			});
+			if (!res.ok) throw new Error(await parseErrorMessage(res));
+			const data = await res.json();
+			savedId = data.attendanceId;
+			phase = 'saved';
+		} catch (e) {
+			errorMsg = e instanceof Error ? e.message : 'Save failed';
+			phase = 'error';
+		}
 	}
 </script>
 
@@ -152,6 +185,33 @@
 			style="background: var(--color-primary); color: var(--color-surface);"
 		>
 			{phase === 'searching' ? 'Searching…' : 'Search'}
+		</button>
+	</form>
+
+	<div class="mb-8 flex items-center gap-3" style="color: var(--color-text-muted);">
+		<hr class="flex-1" style="border-color: var(--color-border);" />
+		<span class="text-xs">or add by URL</span>
+		<hr class="flex-1" style="border-color: var(--color-border);" />
+	</div>
+
+	<form
+		onsubmit={(e) => { e.preventDefault(); saveByUrl(); }}
+		class="mb-8 flex gap-2"
+	>
+		<input
+			type="url"
+			bind:value={urlInput}
+			placeholder="https://www.setlist.fm/setlist/…"
+			class="min-w-0 flex-1 rounded border px-3 py-2 text-sm"
+			style="background: var(--color-surface); border-color: var(--color-border); color: var(--color-text);"
+		/>
+		<button
+			type="submit"
+			disabled={phase === 'saving'}
+			class="shrink-0 rounded px-4 py-2 text-sm font-semibold transition-opacity disabled:opacity-50"
+			style="background: var(--color-primary); color: var(--color-surface);"
+		>
+			{phase === 'saving' ? 'Adding…' : 'Add'}
 		</button>
 	</form>
 
