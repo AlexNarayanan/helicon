@@ -61,54 +61,59 @@
 	{:else if attendances.length === 0}
 		<p style="color: var(--color-text-muted);">No shows logged yet.</p>
 	{:else}
-		<table class="w-full border-collapse text-sm">
-			<thead>
-				<tr style="border-bottom: 1px solid var(--color-border);">
-					<th class="py-2 pr-6 text-left font-semibold" style="color: var(--color-text-muted);"
-						>Date</th
-					>
-					<th class="py-2 pr-6 text-left font-semibold" style="color: var(--color-text-muted);"
-						>Lineup</th
-					>
-					<th class="py-2 pr-6 text-left font-semibold" style="color: var(--color-text-muted);"
-						>Venue</th
-					>
-					<th class="py-2 text-left font-semibold" style="color: var(--color-text-muted);"
-						>Status</th
-					>
-				</tr>
-			</thead>
-			<tbody>
-				{#each attendances as att (att.id)}
-					<tr data-testid="attendance-row" style="border-bottom: 1px solid var(--color-border);">
-						<td class="py-3 pr-6" style="color: var(--color-text-muted);"
-							>{formatDate(att.showDate)}</td
+		<div
+			class="overflow-hidden rounded-lg"
+			style="background-color: var(--color-surface-alt); border: 1px solid var(--color-border);"
+		>
+			<table class="w-full border-collapse text-sm">
+				<thead>
+					<tr style="border-bottom: 1px solid var(--color-border);">
+						<th class="px-4 py-3 text-left font-semibold" style="color: var(--color-text-muted);"
+							>Date</th
 						>
-						<td class="py-3 pr-6">
-							<a
-								href="{base}/attendances/{att.id}"
-								class="font-medium hover:underline"
-								style="color: var(--color-text);"
-							>
-								{formatLineup(att.artists)}
-							</a>
-						</td>
-						<td class="py-3 pr-6" style="color: var(--color-text-muted);">
-							{att.venueName}, {att.venueCity}
-						</td>
-						<td class="py-3">
-							<span
-								class="rounded-full px-2 py-0.5 text-xs font-medium"
-								style="{att.status === 'confirmed'
-									? 'background-color: var(--color-primary); color: var(--color-surface);'
-									: 'background-color: var(--color-border); color: var(--color-text-muted);'}"
-							>
-								{att.status}
-							</span>
-						</td>
+						<th class="px-4 py-3 text-left font-semibold" style="color: var(--color-text-muted);"
+							>Lineup</th
+						>
+						<th class="px-4 py-3 text-left font-semibold" style="color: var(--color-text-muted);"
+							>Venue</th
+						>
+						<th class="px-4 py-3 text-left font-semibold" style="color: var(--color-text-muted);"
+							>Status</th
+						>
 					</tr>
-				{/each}
-			</tbody>
-		</table>
+				</thead>
+				<tbody>
+					{#each attendances as att (att.id)}
+						<tr data-testid="attendance-row" style="border-bottom: 1px solid var(--color-border);">
+							<td class="px-4 py-3" style="color: var(--color-text-muted);"
+								>{formatDate(att.showDate)}</td
+							>
+							<td class="px-4 py-3">
+								<a
+									href="{base}/attendances/{att.id}"
+									class="font-medium hover:underline"
+									style="color: var(--color-text);"
+								>
+									{formatLineup(att.artists)}
+								</a>
+							</td>
+							<td class="px-4 py-3" style="color: var(--color-text-muted);">
+								{att.venueName}, {att.venueCity}
+							</td>
+							<td class="px-4 py-3">
+								<span
+									class="rounded-full px-2 py-0.5 text-xs font-medium"
+									style="{att.status === 'confirmed'
+										? 'background-color: var(--color-primary); color: var(--color-surface);'
+										: 'background-color: var(--color-border); color: var(--color-text-muted);'}"
+								>
+									{att.status}
+								</span>
+							</td>
+						</tr>
+					{/each}
+				</tbody>
+			</table>
+		</div>
 	{/if}
 </div>

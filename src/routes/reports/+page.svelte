@@ -260,7 +260,7 @@
 	{:else}
 		<div
 			class="overflow-hidden rounded-lg"
-			style="border: 1px solid var(--color-border);"
+			style="background-color: var(--color-surface-alt); border: 1px solid var(--color-border);"
 			data-testid="report-results"
 		>
 			{#if reportType === 'mostPlayedSongs' || reportType === 'mostRareSongs'}
