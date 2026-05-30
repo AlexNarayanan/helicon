@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
 
 	let { data } = $props();
@@ -39,6 +40,7 @@
 	let loading = $state(true);
 	let errorMsg = $state('');
 	let resyncing = $state(false);
+	let deleting = $state(false);
 
 	// Edit mode state
 	let editing = $state(false);
@@ -204,6 +206,20 @@
 		}
 	}
 
+	async function deleteAttendance() {
+		if (!attendance) return;
+		if (!confirm('Delete this attendance? This cannot be undone.')) return;
+		deleting = true;
+		try {
+			const res = await fetch(`${base}/api/attendances/${attendance.id}`, { method: 'DELETE' });
+			if (!res.ok) throw new Error(await parseErrorMessage(res));
+			goto(`${base}/attendances`);
+		} catch (e) {
+			errorMsg = e instanceof Error ? e.message : 'Failed to delete';
+			deleting = false;
+		}
+	}
+
 	onMount(load);
 </script>
 
@@ -239,19 +255,21 @@
 				{formatDate(attendance.showDate)}
 			</p>
 
-			<div class="mb-6">
+			<div class="mb-6 flex items-start gap-3">
 				{#if attendance.status === 'planned' && showIsInPast(attendance.showDate)}
-					<button
-						onclick={fetchSetlist}
-						disabled={resyncing}
-						class="rounded px-3 py-1.5 text-xs font-semibold"
-						style="background-color: var(--color-primary); color: var(--color-surface);"
-					>
-						{resyncing ? 'Fetching…' : 'Fetch setlist'}
-					</button>
-					<p class="mt-1 text-xs" style="color: var(--color-text-muted);">
-						This show has passed — we'll pull all setlists and mark it confirmed.
-					</p>
+					<div>
+						<button
+							onclick={fetchSetlist}
+							disabled={resyncing}
+							class="rounded px-3 py-1.5 text-xs font-semibold"
+							style="background-color: var(--color-primary); color: var(--color-surface);"
+						>
+							{resyncing ? 'Fetching…' : 'Fetch setlist'}
+						</button>
+						<p class="mt-1 text-xs" style="color: var(--color-text-muted);">
+							This show has passed — we'll pull all setlists and mark it confirmed.
+						</p>
+					</div>
 				{:else}
 					<button
 						onclick={resync}
@@ -260,6 +278,16 @@
 						style="background-color: var(--color-border); color: var(--color-text);"
 					>
 						{resyncing ? 'Syncing…' : 'Re-sync from setlist.fm'}
+					</button>
+				{/if}
+				{#if editing}
+					<button
+						onclick={deleteAttendance}
+						disabled={deleting}
+						class="rounded px-3 py-1.5 text-xs font-semibold"
+						style="color: #ef4444; background-color: color-mix(in srgb, #ef4444 12%, transparent);"
+					>
+						{deleting ? 'Deleting…' : 'Delete attendance'}
 					</button>
 				{/if}
 			</div>
@@ -286,7 +314,7 @@
 							class="rounded px-3 py-1 text-xs font-medium"
 							style="background-color: var(--color-border); color: var(--color-text);"
 						>
-							Edit lineup
+							Edit
 						</button>
 					{/if}
 				</div>

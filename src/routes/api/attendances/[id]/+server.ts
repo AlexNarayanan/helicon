@@ -172,3 +172,16 @@ export async function PATCH({ params, request }) {
 	if (!updated) throw error(404, 'Attendance not found');
 	return json({ id: updated.id });
 }
+
+export async function DELETE({ params }) {
+	const id = parseInt(params.id);
+	if (isNaN(id)) throw error(400, 'Invalid ID');
+
+	const [deleted] = await db
+		.delete(attendances)
+		.where(eq(attendances.id, id))
+		.returning({ id: attendances.id });
+
+	if (!deleted) throw error(404, 'Attendance not found');
+	return json({ id: deleted.id });
+}
