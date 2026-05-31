@@ -105,11 +105,11 @@ cp .env.example .env   # set POSTGRES_PASSWORD, SETLISTFM_API_KEY
 podman compose -f compose.prod.yml up -d
 ```
 
-The compose stack exposes the app on port 3000. Add this to your shared Caddy config:
+The compose stack exposes the app on port 7000. Add this to your shared Caddy config:
 
 ```caddy
 yourdomain.com {
-    reverse_proxy /helicon* helicon-app:3000
+    reverse_proxy /helicon* helicon-app:7000
     # other apps…
 }
 ```

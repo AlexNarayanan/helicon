@@ -5,9 +5,9 @@ services:
       DATABASE_URL: postgres://helicon:${POSTGRES_PASSWORD}@postgres:5432/helicon
       SETLISTFM_API_KEY: ${SETLISTFM_API_KEY}
       NODE_ENV: production
-      PORT: '3000'
+      PORT: '7000'
     ports:
-      - '3000:3000'
+      - '7000:7000'
     depends_on:
       postgres:
         condition: service_healthy
