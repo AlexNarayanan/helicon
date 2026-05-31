@@ -101,8 +101,8 @@ pnpm test:smoke    # production image smoke test (podman)
 The app is served under the `/helicon` path prefix so it can run alongside other apps behind a shared external Caddy reverse proxy.
 
 ```bash
-cp .env.example .env   # set POSTGRES_PASSWORD, SETLISTFM_API_KEY
-podman compose -f compose.prod.yml up -d
+cp .env.prod.example .env.prod   # set POSTGRES_PASSWORD, SETLISTFM_API_KEY
+make prod-up
 ```
 
 The compose stack exposes the app on port 7000. Add this to your shared Caddy config:

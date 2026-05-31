@@ -73,7 +73,7 @@ case "$MODE" in
     fi
 
     ENV_FILE="$REPO_DIR/.env"
-    [[ -f "$ENV_FILE" ]] || error "No .env file found at: $ENV_FILE"
+    [[ -f "$ENV_FILE" ]] || error "No .env file found at: $ENV_FILE (dev env file)"
 
     DB_URL=$(grep '^DATABASE_URL=' "$ENV_FILE" | head -1 | cut -d= -f2-)
     [[ -n "$DB_URL" ]] || error "DATABASE_URL not found in $ENV_FILE"
