@@ -105,12 +105,22 @@ case "$MODE" in
     DB_URL=$(grep '^DATABASE_URL=' "$ENV_FILE" | head -1 | cut -d= -f2-)
     [[ -n "$DB_URL" ]] || error "DATABASE_URL not found in $ENV_FILE"
 
+    # Parse URL into components so the password goes via PGPASSWORD (not the
+    # command line, where it would be visible to all users in `ps aux`)
+    DB_URL_BODY="${DB_URL#postgres://}"
+    DB_USER="${DB_URL_BODY%%:*}"
+    DB_PASS="${DB_URL_BODY#*:}"; DB_PASS="${DB_PASS%%@*}"
+    DB_HOSTPORT="${DB_URL_BODY##*@}"; DB_HOSTPORT="${DB_HOSTPORT%%/*}"
+    DB_HOST="${DB_HOSTPORT%%:*}"
+    DB_PORT="${DB_HOSTPORT##*:}"
+    DB_NAME="${DB_URL_BODY##*/}"
+
     info "Saving safety copy to: $SAFETY_FILE"
-    pg_dump "$DB_URL" -Fc -f "$SAFETY_FILE"
+    PGPASSWORD="$DB_PASS" pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -Fc -f "$SAFETY_FILE"
     chmod 600 "$SAFETY_FILE"
 
     info "Restoring dev database..."
-    pg_restore -d "$DB_URL" --clean --if-exists "$BACKUP_FILE"
+    PGPASSWORD="$DB_PASS" pg_restore -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" --clean --if-exists "$BACKUP_FILE"
     ;;
 
   prod)
