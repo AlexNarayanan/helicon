@@ -31,6 +31,6 @@ COPY --from=builder /app/scripts/seed.mjs ./scripts/seed.mjs
 COPY scripts/entrypoint.sh ./scripts/entrypoint.sh
 RUN chmod +x ./scripts/entrypoint.sh
 
-EXPOSE 3000
+EXPOSE 7000
 
 ENTRYPOINT ["./scripts/entrypoint.sh"]
