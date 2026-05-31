@@ -3,11 +3,13 @@
 dev-up:
 	@test -f .env || (echo "ERROR: .env not found — copy .env.example to .env and fill in values" && exit 1)
 	podman compose up -d postgres
-	tmux new-session -d -s helicon-dev -c $(PWD) 'pnpm dev; read' 2>/dev/null || true
+	@echo "Waiting for postgres..." && until pg_isready -h localhost -p 7001 -U helicon -q 2>/dev/null; do sleep 1; done
+	pnpm db:seed
+	@if [ -f .dev.pid ] && kill -0 $$(cat .dev.pid) 2>/dev/null; then echo "Dev server already running (PID $$(cat .dev.pid))"; else pnpm dev > /tmp/helicon-dev.log 2>&1 & echo $$! > .dev.pid && echo "Dev server started (PID $$(cat .dev.pid)). Logs: tail -f /tmp/helicon-dev.log"; fi
 
 dev-down:
-	tmux kill-session -t helicon-dev 2>/dev/null || true
-	podman compose stop postgres
+	@if [ -f .dev.pid ]; then kill $$(cat .dev.pid) 2>/dev/null || true; rm -f .dev.pid; fi
+	podman compose down postgres
 
 prod-up:
 	@test -f .env.prod || (echo "ERROR: .env.prod not found — copy .env.prod.example to .env.prod and fill in values" && exit 1)
