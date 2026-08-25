@@ -77,9 +77,11 @@
 	}
 
 	function parseSetlistId(url: string): string | null {
-		// setlist.fm URLs end with <venue-slug>-<8hexchars>.html
-		const match = url.trim().match(/([0-9a-f]{8})(?:\.html)?$/i);
-		return match ? match[1].toLowerCase() : null;
+		// setlist.fm URLs end with <venue-slug>-<id>.html, where <id> is a
+		// variable-length hex string (not always 8 characters)
+		const lastSegment = url.trim().split('?')[0].split('/').pop() ?? '';
+		const id = lastSegment.replace(/\.html$/i, '').split('-').pop() ?? '';
+		return /^[0-9a-f]+$/i.test(id) ? id.toLowerCase() : null;
 	}
 
 	async function saveByUrl() {
