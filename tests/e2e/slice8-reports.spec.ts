@@ -13,9 +13,23 @@ const mockFilters = {
 };
 
 const mockMostPlayedSongs = [
-	{ songName: 'Master of Puppets', artistName: 'Metallica', playCount: 5 },
-	{ songName: 'Enter Sandman', artistName: 'Metallica', playCount: 3 },
-	{ songName: 'Cowboys from Hell', artistName: 'Pantera', playCount: 2 }
+	{
+		songId: 1,
+		songName: 'Master of Puppets',
+		artistName: 'Metallica',
+		playCount: 5,
+		shows: [
+			{
+				showId: 1,
+				showDate: '2023-06-15',
+				venueName: 'Madison Square Garden',
+				venueCity: 'New York',
+				venueCountry: 'US'
+			}
+		]
+	},
+	{ songId: 2, songName: 'Enter Sandman', artistName: 'Metallica', playCount: 3 },
+	{ songId: 3, songName: 'Cowboys from Hell', artistName: 'Pantera', playCount: 2 }
 ];
 
 const mockMostRareSongs = [
@@ -165,5 +179,23 @@ test.describe('reports page', () => {
 		await expect(page.getByTestId('report-results')).toBeVisible({ timeout: 10000 });
 		const rows = page.getByTestId('report-row');
 		await expect(rows).toHaveCount(3);
+	});
+
+	test('expanding a row shows show detail, collapsing hides it', async ({ page }) => {
+		await page.goto('/helicon/reports');
+		await expect(page.getByTestId('report-results')).toBeVisible({ timeout: 10000 });
+
+		await expect(page.getByTestId('report-row-detail')).toHaveCount(0);
+
+		const firstToggle = page.getByTestId('report-row-expand-toggle').first();
+		await firstToggle.click();
+
+		const detail = page.getByTestId('report-row-detail');
+		await expect(detail).toHaveCount(1);
+		await expect(detail).toContainText('Madison Square Garden');
+		await expect(detail).toContainText('New York');
+
+		await firstToggle.click();
+		await expect(page.getByTestId('report-row-detail')).toHaveCount(0);
 	});
 });

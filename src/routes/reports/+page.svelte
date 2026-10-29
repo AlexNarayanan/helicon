@@ -10,15 +10,45 @@
 		| 'bothOpenerAndHeadliner'
 		| 'openersDistribution';
 
-	type SongRow = { songName: string; artistName: string; playCount: number };
+	type SongShowDetail = {
+		showId: number;
+		showDate: string;
+		venueName: string;
+		venueCity: string;
+		venueCountry: string;
+	};
+	type VenueShowDetail = { showId: number; showDate: string; artistNames: string[] };
+	type ArtistShowDetail = {
+		showId: number;
+		showDate: string;
+		venueName: string;
+		venueCity: string;
+		venueCountry: string;
+		role: 'headliner' | 'opener';
+	};
+
+	type SongRow = {
+		songId: number;
+		songName: string;
+		artistName: string;
+		playCount: number;
+		shows?: SongShowDetail[];
+	};
 	type VenueRow = {
 		venueId: number;
 		venueName: string;
 		venueCity: string;
 		venueCountry: string;
 		showCount: number;
+		shows?: VenueShowDetail[];
 	};
-	type BothRolesRow = { artistName: string; headlinerCount: number; openerCount: number };
+	type BothRolesRow = {
+		artistId: number;
+		artistName: string;
+		headlinerCount: number;
+		openerCount: number;
+		shows?: ArtistShowDetail[];
+	};
 	type DistributionRow = { openerCount: number; showCount: number };
 	type ReportRow = SongRow | VenueRow | BothRolesRow | DistributionRow;
 
@@ -51,6 +81,7 @@
 	let results = $state<ReportRow[]>([]);
 	let loading = $state(true);
 	let errorMsg = $state('');
+	let expandedRows = $state<Set<number>>(new Set());
 
 	const isFilterable = $derived(FILTERABLE.includes(reportType));
 
@@ -65,6 +96,7 @@
 	async function fetchReport() {
 		loading = true;
 		errorMsg = '';
+		expandedRows = new Set();
 		try {
 			const params = new URLSearchParams({ type: reportType });
 			if (isFilterable) {
@@ -81,6 +113,19 @@
 		} finally {
 			loading = false;
 		}
+	}
+
+	function toggleRow(i: number) {
+		const next = new Set(expandedRows);
+		if (next.has(i)) next.delete(i);
+		else next.add(i);
+		expandedRows = next;
+	}
+
+	function formatDate(dateStr: string): string {
+		const [year, month, day] = dateStr.split('-');
+		const d = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+		return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 	}
 
 	function onReportTypeChange() {
@@ -267,6 +312,7 @@
 				<table class="w-full text-sm">
 					<thead>
 						<tr style="background-color: var(--color-surface-alt);">
+							<th class="w-8 px-2 py-3"></th>
 							<th
 								class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide"
 								style="color: var(--color-text-muted);">#</th
@@ -292,6 +338,17 @@
 								style="border-top: 1px solid var(--color-border);"
 								data-testid="report-row"
 							>
+								<td class="px-2 py-3 text-center">
+									<button
+										onclick={() => toggleRow(i)}
+										data-testid="report-row-expand-toggle"
+										aria-expanded={expandedRows.has(i)}
+										aria-label={expandedRows.has(i) ? 'Collapse details' : 'Expand details'}
+										class="rounded px-1.5 py-0.5 text-xs leading-none"
+										style="background-color: var(--color-border); color: var(--color-text-muted);"
+										>{expandedRows.has(i) ? '▼' : '▶'}</button
+									>
+								</td>
 								<td class="px-4 py-3" style="color: var(--color-text-muted);">{i + 1}</td>
 								<td class="px-4 py-3 font-medium" style="color: var(--color-text);"
 									>{r.songName}</td
@@ -301,6 +358,25 @@
 									>{r.playCount}</td
 								>
 							</tr>
+							{#if expandedRows.has(i)}
+								<tr data-testid="report-row-detail">
+									<td
+										class="px-4 py-3 text-xs"
+										colspan="5"
+										style="color: var(--color-text-muted); background-color: var(--color-surface);"
+									>
+										{#if !r.shows || r.shows.length === 0}
+											<p>No show detail available.</p>
+										{:else}
+											<ul class="flex flex-col gap-1">
+												{#each r.shows as s (s.showId)}
+													<li>{formatDate(s.showDate)} — {s.venueName}, {s.venueCity}</li>
+												{/each}
+											</ul>
+										{/if}
+									</td>
+								</tr>
+							{/if}
 						{/each}
 					</tbody>
 				</table>
@@ -308,6 +384,7 @@
 				<table class="w-full text-sm">
 					<thead>
 						<tr style="background-color: var(--color-surface-alt);">
+							<th class="w-8 px-2 py-3"></th>
 							<th
 								class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide"
 								style="color: var(--color-text-muted);">#</th
@@ -330,6 +407,17 @@
 						{#each results as row, i (i)}
 							{@const r = row as VenueRow}
 							<tr style="border-top: 1px solid var(--color-border);" data-testid="report-row">
+								<td class="px-2 py-3 text-center">
+									<button
+										onclick={() => toggleRow(i)}
+										data-testid="report-row-expand-toggle"
+										aria-expanded={expandedRows.has(i)}
+										aria-label={expandedRows.has(i) ? 'Collapse details' : 'Expand details'}
+										class="rounded px-1.5 py-0.5 text-xs leading-none"
+										style="background-color: var(--color-border); color: var(--color-text-muted);"
+										>{expandedRows.has(i) ? '▼' : '▶'}</button
+									>
+								</td>
 								<td class="px-4 py-3" style="color: var(--color-text-muted);">{i + 1}</td>
 								<td class="px-4 py-3 font-medium" style="color: var(--color-text);"
 									>{r.venueName}</td
@@ -341,6 +429,25 @@
 									>{r.showCount}</td
 								>
 							</tr>
+							{#if expandedRows.has(i)}
+								<tr data-testid="report-row-detail">
+									<td
+										class="px-4 py-3 text-xs"
+										colspan="5"
+										style="color: var(--color-text-muted); background-color: var(--color-surface);"
+									>
+										{#if !r.shows || r.shows.length === 0}
+											<p>No show detail available.</p>
+										{:else}
+											<ul class="flex flex-col gap-1">
+												{#each r.shows as s (s.showId)}
+													<li>{formatDate(s.showDate)} — {s.artistNames.join(', ')}</li>
+												{/each}
+											</ul>
+										{/if}
+									</td>
+								</tr>
+							{/if}
 						{/each}
 					</tbody>
 				</table>
@@ -348,6 +455,7 @@
 				<table class="w-full text-sm">
 					<thead>
 						<tr style="background-color: var(--color-surface-alt);">
+							<th class="w-8 px-2 py-3"></th>
 							<th
 								class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide"
 								style="color: var(--color-text-muted);">Artist</th
@@ -366,6 +474,17 @@
 						{#each results as row, i (i)}
 							{@const r = row as BothRolesRow}
 							<tr style="border-top: 1px solid var(--color-border);" data-testid="report-row">
+								<td class="px-2 py-3 text-center">
+									<button
+										onclick={() => toggleRow(i)}
+										data-testid="report-row-expand-toggle"
+										aria-expanded={expandedRows.has(i)}
+										aria-label={expandedRows.has(i) ? 'Collapse details' : 'Expand details'}
+										class="rounded px-1.5 py-0.5 text-xs leading-none"
+										style="background-color: var(--color-border); color: var(--color-text-muted);"
+										>{expandedRows.has(i) ? '▼' : '▶'}</button
+									>
+								</td>
 								<td class="px-4 py-3 font-medium" style="color: var(--color-text);"
 									>{r.artistName}</td
 								>
@@ -376,6 +495,30 @@
 									>{r.openerCount}</td
 								>
 							</tr>
+							{#if expandedRows.has(i)}
+								<tr data-testid="report-row-detail">
+									<td
+										class="px-4 py-3 text-xs"
+										colspan="4"
+										style="color: var(--color-text-muted); background-color: var(--color-surface);"
+									>
+										{#if !r.shows || r.shows.length === 0}
+											<p>No show detail available.</p>
+										{:else}
+											<ul class="flex flex-col gap-1">
+												{#each r.shows as s (s.showId)}
+													<li>
+														{formatDate(s.showDate)} — {s.venueName}, {s.venueCity} ({s.role ===
+														'headliner'
+															? 'Headliner'
+															: 'Opener'})
+													</li>
+												{/each}
+											</ul>
+										{/if}
+									</td>
+								</tr>
+							{/if}
 						{/each}
 					</tbody>
 				</table>

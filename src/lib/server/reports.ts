@@ -12,10 +12,26 @@ export interface ReportFilters {
 	yearEnd?: number;
 }
 
+export interface SongShowDetail {
+	showId: number;
+	showDate: string;
+	venueName: string;
+	venueCity: string;
+	venueCountry: string;
+}
+
 export interface SongPlayCount {
+	songId: number;
 	songName: string;
 	artistName: string;
 	playCount: number;
+	shows: SongShowDetail[];
+}
+
+export interface VenueShowDetail {
+	showId: number;
+	showDate: string;
+	artistNames: string[];
 }
 
 export interface VenueCount {
@@ -24,12 +40,24 @@ export interface VenueCount {
 	venueCity: string;
 	venueCountry: string;
 	showCount: number;
+	shows: VenueShowDetail[];
+}
+
+export interface ArtistShowDetail {
+	showId: number;
+	showDate: string;
+	venueName: string;
+	venueCity: string;
+	venueCountry: string;
+	role: 'headliner' | 'opener';
 }
 
 export interface ArtistBothRoles {
+	artistId: number;
 	artistName: string;
 	headlinerCount: number;
 	openerCount: number;
+	shows: ArtistShowDetail[];
 }
 
 export interface OpenerDistribution {
@@ -37,11 +65,8 @@ export interface OpenerDistribution {
 	showCount: number;
 }
 
-function songFilters(filters: ReportFilters): (SQL | undefined)[] {
+function yearRangeFilters(filters: ReportFilters): (SQL | undefined)[] {
 	return [
-		eq(attendances.userId, SENTINEL_USER_ID),
-		filters.artistIds?.length ? inArray(performances.artistId, filters.artistIds) : undefined,
-		filters.venueIds?.length ? inArray(shows.venueId, filters.venueIds) : undefined,
 		filters.yearStart !== undefined
 			? sql`EXTRACT(YEAR FROM ${shows.showDate}::date)::int >= ${filters.yearStart}`
 			: undefined,
@@ -51,13 +76,167 @@ function songFilters(filters: ReportFilters): (SQL | undefined)[] {
 	];
 }
 
+function songFilters(filters: ReportFilters): (SQL | undefined)[] {
+	return [
+		eq(attendances.userId, SENTINEL_USER_ID),
+		filters.artistIds?.length ? inArray(performances.artistId, filters.artistIds) : undefined,
+		filters.venueIds?.length ? inArray(shows.venueId, filters.venueIds) : undefined,
+		...yearRangeFilters(filters)
+	];
+}
+
+async function getSongShowDetails(
+	db: DB,
+	songIds: number[],
+	filters: ReportFilters
+): Promise<Map<number, SongShowDetail[]>> {
+	if (songIds.length === 0) return new Map();
+
+	const rows = await db
+		.select({
+			songId: songs.id,
+			showId: shows.id,
+			showDate: shows.showDate,
+			venueName: venues.name,
+			venueCity: venues.city,
+			venueCountry: venues.country
+		})
+		.from(attendances)
+		.innerJoin(shows, eq(attendances.showId, shows.id))
+		.innerJoin(venues, eq(shows.venueId, venues.id))
+		.innerJoin(performances, eq(performances.showId, shows.id))
+		.innerJoin(setlistSongs, eq(setlistSongs.performanceId, performances.id))
+		.innerJoin(songs, eq(setlistSongs.songId, songs.id))
+		.where(and(inArray(songs.id, songIds), ...songFilters(filters)))
+		.orderBy(desc(shows.showDate));
+
+	const map = new Map<number, SongShowDetail[]>();
+	const seen = new Set<string>();
+	for (const r of rows) {
+		const key = `${r.songId}:${r.showId}`;
+		if (seen.has(key)) continue;
+		seen.add(key);
+		const arr = map.get(r.songId) ?? [];
+		arr.push({
+			showId: r.showId,
+			showDate: r.showDate,
+			venueName: r.venueName,
+			venueCity: r.venueCity,
+			venueCountry: r.venueCountry
+		});
+		map.set(r.songId, arr);
+	}
+	return map;
+}
+
+async function getVenueShowDetails(
+	db: DB,
+	venueIds: number[],
+	filters: ReportFilters
+): Promise<Map<number, VenueShowDetail[]>> {
+	if (venueIds.length === 0) return new Map();
+
+	const conditions: (SQL | undefined)[] = [
+		eq(attendances.userId, SENTINEL_USER_ID),
+		inArray(venues.id, venueIds),
+		filters.artistIds?.length ? inArray(performances.artistId, filters.artistIds) : undefined,
+		...yearRangeFilters(filters)
+	];
+
+	const rows = await db
+		.select({
+			venueId: venues.id,
+			showId: shows.id,
+			showDate: shows.showDate,
+			artistName: artists.name
+		})
+		.from(attendances)
+		.innerJoin(shows, eq(attendances.showId, shows.id))
+		.innerJoin(venues, eq(shows.venueId, venues.id))
+		.innerJoin(performances, eq(performances.showId, shows.id))
+		.innerJoin(artists, eq(artists.id, performances.artistId))
+		.where(and(...conditions))
+		.orderBy(desc(shows.showDate), desc(performances.billingOrder));
+
+	const byVenue = new Map<number, Map<number, VenueShowDetail>>();
+	for (const r of rows) {
+		let showMap = byVenue.get(r.venueId);
+		if (!showMap) {
+			showMap = new Map();
+			byVenue.set(r.venueId, showMap);
+		}
+		let detail = showMap.get(r.showId);
+		if (!detail) {
+			detail = { showId: r.showId, showDate: r.showDate, artistNames: [] };
+			showMap.set(r.showId, detail);
+		}
+		detail.artistNames.push(r.artistName);
+	}
+
+	const result = new Map<number, VenueShowDetail[]>();
+	for (const [venueId, showMap] of byVenue) {
+		result.set(venueId, [...showMap.values()]);
+	}
+	return result;
+}
+
+async function getArtistShowDetails(
+	db: DB,
+	artistIds: number[]
+): Promise<Map<number, ArtistShowDetail[]>> {
+	if (artistIds.length === 0) return new Map();
+
+	const rows = (await db.execute(sql`
+		WITH show_max_billing AS (
+			SELECT show_id, MAX(billing_order) AS max_billing_order
+			FROM performances
+			GROUP BY show_id
+		)
+		SELECT
+			p.artist_id AS artist_id,
+			s.id AS show_id,
+			s.show_date AS show_date,
+			v.name AS venue_name,
+			v.city AS venue_city,
+			v.country AS venue_country,
+			CASE WHEN p.billing_order = smb.max_billing_order THEN 'headliner' ELSE 'opener' END AS role
+		FROM performances p
+		JOIN attendances att ON att.show_id = p.show_id
+		JOIN show_max_billing smb ON smb.show_id = p.show_id
+		JOIN shows s ON s.id = p.show_id
+		JOIN venues v ON v.id = s.venue_id
+		WHERE att.user_id = ${SENTINEL_USER_ID}
+			AND p.artist_id = ANY(ARRAY[${sql.join(
+				artistIds.map((id) => sql`${id}`),
+				sql`, `
+			)}]::int[])
+		ORDER BY s.show_date DESC
+	`)) as Record<string, unknown>[];
+
+	const map = new Map<number, ArtistShowDetail[]>();
+	for (const r of rows) {
+		const artistId = Number(r.artist_id);
+		const arr = map.get(artistId) ?? [];
+		arr.push({
+			showId: Number(r.show_id),
+			showDate: String(r.show_date),
+			venueName: String(r.venue_name),
+			venueCity: String(r.venue_city),
+			venueCountry: String(r.venue_country),
+			role: r.role === 'headliner' ? 'headliner' : 'opener'
+		});
+		map.set(artistId, arr);
+	}
+	return map;
+}
+
 export async function getMostPlayedSongs(
 	db: DB,
 	filters: ReportFilters
 ): Promise<SongPlayCount[]> {
 	const playCnt = count(setlistSongs.id);
 	const rows = await db
-		.select({ songName: songs.name, artistName: artists.name, playCount: playCnt })
+		.select({ songId: songs.id, songName: songs.name, artistName: artists.name, playCount: playCnt })
 		.from(attendances)
 		.innerJoin(shows, eq(attendances.showId, shows.id))
 		.innerJoin(performances, eq(performances.showId, shows.id))
@@ -68,13 +247,15 @@ export async function getMostPlayedSongs(
 		.groupBy(songs.id, songs.name, artists.name)
 		.orderBy(desc(playCnt))
 		.limit(20);
-	return rows.map((r) => ({ ...r, playCount: Number(r.playCount) }));
+	const mapped = rows.map((r) => ({ ...r, playCount: Number(r.playCount) }));
+	const detailMap = await getSongShowDetails(db, mapped.map((r) => r.songId), filters);
+	return mapped.map((r) => ({ ...r, shows: detailMap.get(r.songId) ?? [] }));
 }
 
 export async function getMostRareSongs(db: DB, filters: ReportFilters): Promise<SongPlayCount[]> {
 	const playCnt = count(setlistSongs.id);
 	const rows = await db
-		.select({ songName: songs.name, artistName: artists.name, playCount: playCnt })
+		.select({ songId: songs.id, songName: songs.name, artistName: artists.name, playCount: playCnt })
 		.from(attendances)
 		.innerJoin(shows, eq(attendances.showId, shows.id))
 		.innerJoin(performances, eq(performances.showId, shows.id))
@@ -85,7 +266,9 @@ export async function getMostRareSongs(db: DB, filters: ReportFilters): Promise<
 		.groupBy(songs.id, songs.name, artists.name)
 		.orderBy(asc(playCnt), asc(songs.name))
 		.limit(20);
-	return rows.map((r) => ({ ...r, playCount: Number(r.playCount) }));
+	const mapped = rows.map((r) => ({ ...r, playCount: Number(r.playCount) }));
+	const detailMap = await getSongShowDetails(db, mapped.map((r) => r.songId), filters);
+	return mapped.map((r) => ({ ...r, shows: detailMap.get(r.songId) ?? [] }));
 }
 
 export async function getMostCommonVenues(
@@ -95,12 +278,7 @@ export async function getMostCommonVenues(
 	const conditions: (SQL | undefined)[] = [
 		eq(attendances.userId, SENTINEL_USER_ID),
 		filters.artistIds?.length ? inArray(performances.artistId, filters.artistIds) : undefined,
-		filters.yearStart !== undefined
-			? sql`EXTRACT(YEAR FROM ${shows.showDate}::date)::int >= ${filters.yearStart}`
-			: undefined,
-		filters.yearEnd !== undefined
-			? sql`EXTRACT(YEAR FROM ${shows.showDate}::date)::int <= ${filters.yearEnd}`
-			: undefined
+		...yearRangeFilters(filters)
 	];
 
 	const showCnt = sql<number>`COUNT(DISTINCT ${shows.id})`;
@@ -120,7 +298,9 @@ export async function getMostCommonVenues(
 		.groupBy(venues.id, venues.name, venues.city, venues.country)
 		.orderBy(desc(showCnt))
 		.limit(10);
-	return rows.map((r) => ({ ...r, showCount: Number(r.showCount) }));
+	const mapped = rows.map((r) => ({ ...r, showCount: Number(r.showCount) }));
+	const detailMap = await getVenueShowDetails(db, mapped.map((r) => r.venueId), filters);
+	return mapped.map((r) => ({ ...r, shows: detailMap.get(r.venueId) ?? [] }));
 }
 
 export async function getArtistsBothOpenerAndHeadliner(db: DB): Promise<ArtistBothRoles[]> {
@@ -138,6 +318,7 @@ export async function getArtistsBothOpenerAndHeadliner(db: DB): Promise<ArtistBo
 			WHERE att.user_id = ${SENTINEL_USER_ID}
 		)
 		SELECT
+			a.id AS artist_id,
 			a.name AS artist_name,
 			COUNT(*) FILTER (WHERE ap.billing_order = ap.max_billing_order) AS headliner_count,
 			COUNT(*) FILTER (WHERE ap.billing_order < ap.max_billing_order) AS opener_count
@@ -152,11 +333,17 @@ export async function getArtistsBothOpenerAndHeadliner(db: DB): Promise<ArtistBo
 			COUNT(*) FILTER (WHERE ap.billing_order < ap.max_billing_order)
 		) DESC
 	`)) as Record<string, unknown>[];
-	return rows.map((r) => ({
+	const mapped = rows.map((r) => ({
+		artistId: Number(r.artist_id),
 		artistName: String(r.artist_name),
 		headlinerCount: Number(r.headliner_count),
 		openerCount: Number(r.opener_count)
 	}));
+	const detailMap = await getArtistShowDetails(
+		db,
+		mapped.map((r) => r.artistId)
+	);
+	return mapped.map((r) => ({ ...r, shows: detailMap.get(r.artistId) ?? [] }));
 }
 
 export async function getOpenersPerShowDistribution(db: DB): Promise<OpenerDistribution[]> {

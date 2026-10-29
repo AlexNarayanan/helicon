@@ -225,6 +225,16 @@ describe('getMostPlayedSongs', () => {
 		expect(rows).toHaveLength(1);
 		expect(rows[0].songName).toBe('Walk');
 	});
+
+	it('includes show detail for each song, ordered by date descending', async () => {
+		const rows = await getMostPlayedSongs(db, {});
+		const masterOfPuppets = rows.find((r) => r.songName === 'Master of Puppets');
+		expect(masterOfPuppets?.shows).toHaveLength(2);
+		// show1 (2023-08-11) is more recent than show2 (2022-06-10)
+		expect(masterOfPuppets?.shows[0].showDate).toBe('2023-08-11');
+		expect(masterOfPuppets?.shows[0].venueName).toBe('Madison Square Garden');
+		expect(masterOfPuppets?.shows[1].showDate).toBe('2022-06-10');
+	});
 });
 
 describe('getMostRareSongs', () => {
@@ -277,6 +287,18 @@ describe('getMostCommonVenues', () => {
 		expect(rows).toHaveLength(1);
 		expect(rows[0].venueName).toBe('The Forum');
 	});
+
+	it('includes show detail with artists billed headliner-first, dates descending', async () => {
+		const rows = await getMostCommonVenues(db, {});
+		const msg = rows.find((r) => r.venueName === 'Madison Square Garden');
+		expect(msg?.shows).toHaveLength(2);
+		// show1 (2023-08-11): Metallica (headliner) + Pantera (opener)
+		expect(msg?.shows[0].showDate).toBe('2023-08-11');
+		expect(msg?.shows[0].artistNames).toEqual(['Metallica', 'Pantera']);
+		// show2 (2022-06-10): Metallica (headliner) + Slayer (opener)
+		expect(msg?.shows[1].showDate).toBe('2022-06-10');
+		expect(msg?.shows[1].artistNames).toEqual(['Metallica', 'Slayer']);
+	});
 });
 
 describe('getArtistsBothOpenerAndHeadliner', () => {
@@ -296,6 +318,20 @@ describe('getArtistsBothOpenerAndHeadliner', () => {
 		const names = rows.map((r) => r.artistName);
 		expect(names).not.toContain('Metallica');
 		expect(names).not.toContain('Slayer');
+	});
+
+	it('includes show detail with correct role per show, dates descending', async () => {
+		const rows = await getArtistsBothOpenerAndHeadliner(db);
+		const pantera = rows[0];
+		expect(pantera.shows).toHaveLength(2);
+		// show3 (2021-05-15): Pantera headliner (solo)
+		// show1 (2023-08-11): Pantera opener (Metallica headlines)
+		expect(pantera.shows[0].showDate).toBe('2023-08-11');
+		expect(pantera.shows[0].role).toBe('opener');
+		expect(pantera.shows[0].venueName).toBe('Madison Square Garden');
+		expect(pantera.shows[1].showDate).toBe('2021-05-15');
+		expect(pantera.shows[1].role).toBe('headliner');
+		expect(pantera.shows[1].venueName).toBe('The Forum');
 	});
 });
 
