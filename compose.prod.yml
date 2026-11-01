@@ -11,7 +11,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    restart: unless-stopped
+    restart: always  # podman-restart.service only starts "always" containers at boot
 
   postgres:
     image: docker.io/library/postgres:16-alpine
@@ -26,7 +26,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
+    restart: always
 
 volumes:
   postgres_data:
